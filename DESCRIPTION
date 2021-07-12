@@ -25,4 +25,5 @@ VignetteBuilder: knitr
 License: BSD_2_clause + file LICENSE
 RoxygenNote: 7.1.1
 StagedInstall: TRUE
+Biarch: TRUE
 NeedsCompilation: yes
