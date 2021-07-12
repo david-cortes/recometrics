@@ -413,11 +413,10 @@ void calc_metrics
             private(pred_thread, ind_thread, test_bool_thread, A_thread, \
                     p_at_k_user, tp_at_k_user, r_at_k_user, ap_at_k_user, tap_at_k_user, \
                     ndcg_at_k_user, hit_at_k_user, rr_at_k_user) \
-            shared(calc_top_metrics, only_first_pos, \
-                   p_at_k, tp_at_k, r_at_k, ap_at_k, tap_at_k, ndcg_at_k, hit_at_k, rr_at_k, roc_auc, pr_auc, \
-                   A, lda, B, ldb, m, n, k, k_metrics, cumulative, \
+            shared(p_at_k, tp_at_k, r_at_k, ap_at_k, tap_at_k, ndcg_at_k, hit_at_k, rr_at_k, roc_auc, pr_auc, \
+                   A, B, \
                    Xtrain_csr_p, Xtrain_csr_i, Xtest_csr_p, Xtest_csr_i, Xtest_csr, \
-                   consider_cold_start, min_pos_test, min_items_pool, break_ties_with_noise, seed, \
+                   min_pos_test, min_items_pool, seed, \
                    pred_buffer, ind_buffer, test_bool_buffer)
     for (int32_t user = 0; user < m; user++)
     {
