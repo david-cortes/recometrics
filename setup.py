@@ -2,15 +2,7 @@ import setuptools
 from setuptools import setup, Extension
 import numpy as np
 import sys, os
-from_rtd = os.environ.get('READTHEDOCS') == 'True'
-from_rtd = False
-if not from_rtd:
-    from Cython.Distutils import build_ext
-else:
-    class build_ext:
-        def build_extensions(self):
-            pass
-
+from Cython.Distutils import build_ext
 
 class build_ext_subclass( build_ext ):
     def build_extensions(self):
@@ -55,35 +47,22 @@ if sys.platform[:3] != "dar":
 ### Shorthand for apple computer:
 ### uncomment line below
 # use_omp = True
-
-if not from_rtd:
-    setup(
-        name  = "recometrics",
-        packages = ["recometrics"],
-        version = '0.1.0-1',
-        cmdclass = {'build_ext': build_ext_subclass},
-        author = 'David Cortes',
-        author_email = 'david.cortes.rivera@gmail.com',
-        url = 'https://github.com/david-cortes/recometrics',
-        install_requires = ['numpy', 'scipy', 'cython', 'pandas'],
-        description = 'Library-agnostic evaluation framework for implicit-feedback recommender systems',
-        ext_modules = [
-            Extension("recometrics.cpp_funs",
-                language="c++",
-                sources=["recometrics/wrapper.pyx", "src/recometrics_instantiated.cpp"],
-                include_dirs=[np.get_include(), "src"],
-                define_macros=[("_FOR_PYTHON", None)]
-                )
-            ]
-    )
-else:
-    setup(
-        name  = "recometrics",
-        packages = ["recometrics"],
-        version = '0.1.0-1',
-        author = 'David Cortes',
-        author_email = 'david.cortes.rivera@gmail.com',
-        url = 'https://github.com/david-cortes/recometrics',
-        install_requires = ['numpy', 'scipy', 'cython', 'pandas'],
-        description = 'Library-agnostic evaluation framework for implicit-feedback recommender systems',
-    )
+setup(
+    name  = "recometrics",
+    packages = ["recometrics"],
+    version = '0.1.1',
+    cmdclass = {'build_ext': build_ext_subclass},
+    author = 'David Cortes',
+    author_email = 'david.cortes.rivera@gmail.com',
+    url = 'https://github.com/david-cortes/recometrics',
+    install_requires = ['numpy', 'scipy', 'cython', 'pandas'],
+    description = 'Library-agnostic evaluation framework for implicit-feedback recommender systems',
+    ext_modules = [
+        Extension("recometrics.cpp_funs",
+            language="c++",
+            sources=["recometrics/wrapper.pyx", "src/recometrics_instantiated.cpp"],
+            include_dirs=[np.get_include(), "src"],
+            define_macros=[("_FOR_PYTHON", None)]
+            )
+        ]
+)

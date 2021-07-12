@@ -438,7 +438,7 @@ void calc_metrics
                 size_t st = (size_t)user*(size_t)k_metrics;
                 size_t end = (size_t)(user+1)*(size_t)k_metrics;
                 if (p_at_k) std::fill(p_at_k + st, p_at_k + end, NAN_);
-                if (tp_at_k) std::fill(tp_at_k + st, p_at_k + end, NAN_);
+                if (tp_at_k) std::fill(tp_at_k + st, tp_at_k + end, NAN_);
                 if (r_at_k) std::fill(r_at_k + st, r_at_k + end, NAN_);
                 if (ap_at_k) std::fill(ap_at_k + st, ap_at_k + end, NAN_);
                 if (tap_at_k) std::fill(tap_at_k + st, tap_at_k + end, NAN_);
