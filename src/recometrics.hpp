@@ -55,7 +55,7 @@ using std::int32_t;
 
 #if defined(_FOR_R)
 extern "C" double ddot_(const int *n, const double *dx, const int *incx, const double *dy, const int *incy);
-extern "C" double sdot_(const int *n, const float *dx, const int *incx, const float *dy, const int *incy);
+extern "C" float sdot_(const int *n, const float *dx, const int *incx, const float *dy, const int *incy);
 #endif
 
 #ifndef _FOR_R
