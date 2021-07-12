@@ -19,7 +19,7 @@ Description: Calculates evaluation metrics for implicit-feedback recommender sys
   by the model, using efficient multi-threaded routines. Also provides functions
   for creating train-test splits for model fitting and evaluation.
 LinkingTo: Rcpp, float
-Imports: Rcpp (>= 1.0.1), Matrix (>= 1.3), MatrixExtra, float, RhpcBLASctl, methods
+Imports: Rcpp (>= 1.0.1), Matrix (>= 1.3-4), MatrixExtra, float, RhpcBLASctl, methods
 Suggests: recommenderlab (>= 0.2-7), cmfrec, data.table, knitr, rmarkdown, kableExtra, testthat
 VignetteBuilder: knitr
 License: BSD_2_clause + file LICENSE
