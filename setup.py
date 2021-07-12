@@ -50,7 +50,7 @@ if sys.platform[:3] != "dar":
 setup(
     name  = "recometrics",
     packages = ["recometrics"],
-    version = '0.1.1',
+    version = '0.1.2',
     cmdclass = {'build_ext': build_ext_subclass},
     author = 'David Cortes',
     author_email = 'david.cortes.rivera@gmail.com',
