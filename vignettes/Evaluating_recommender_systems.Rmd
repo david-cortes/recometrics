@@ -1,0 +1,757 @@
+---
+title: "Evaluating recommender systems"
+output: rmarkdown::html_vignette
+vignette: >
+    %\VignetteIndexEntry{Evaluating_recommender_systems}
+    %\VignetteEngine{knitr::rmarkdown}
+    %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+    collapse = TRUE,
+    comment = "#>"
+)
+options(rmarkdown.html_vignette.check_title = FALSE)
+```
+```{r, include = FALSE}
+### Don't overload CRAN servers
+### https://stackoverflow.com/questions/28961431/computationally-heavy-r-vignettes
+is_check <- ("CheckExEnv" %in% search()) || any(c("_R_CHECK_TIMINGS_",
+             "_R_CHECK_LICENSE_") %in% names(Sys.getenv()))
+```
+
+This vignette is an introduction to the R package
+[recometrics](https://cran.r-project.org/package=recometrics)
+for evaluating recommender systems built with implicit-feedback data, assuming
+that the recommendation models are based on low-rank matrix factorization
+(example such packages:
+[cmfrec](https://cran.r-project.org/package=cmfrec),
+[rsparse](https://cran.r-project.org/package=rsparse),
+[recosystem](https://cran.r-project.org/package=recosystem),
+among many others), or assuming that it is possible to compute a user-item
+score as a dot product of user and item factors/components/attributes.
+
+### Implicit-feedback data
+
+Historically, many models for recommender systems were designed by approaching the
+problem as regression or rating prediction, by taking as input a matrix
+$\mathbf{X}_{ui}$ denoting user likes and dislikes of items in a scale
+(e.g. users giving a 1-to-5 star rating to different movies), and evaluating such
+models by seeing how well they predict these ratings on hold-out data.
+
+In many cases, it is impossible or very expensive to obtain such data, but one
+has instead so called "implicit-feedback" records: that is, observed logs of user
+interactions with items (e.g. number of times that a user played each
+song in a music service), which do not signal dislikes in the same way as a
+1-star rating would, but can still be used for building and evaluating
+recommender systems.
+
+In the latter case, the problem is approached more as ranking or classification
+instead of regression, with the models being evaluated not by how well they
+perform at predicting ratings, but by how good they are at scoring the observed
+interactions higher than the non-observed interactions for each user, using
+metrics more typical of information retrieval.
+
+Generating a ranked list of items for each user according to their predicted
+score and comparing such lists against hold-out data can nevertheless be very
+slow (might even be slower than fitting the model itself), and this is where
+`recometrics` comes in: it provides efficient routines for calculating many
+implicit-feedback recommendation quality metrics, which exploit multi-threading,
+SIMD instructions, and efficient sorted search procedures.
+
+### Matrix factorization models
+
+The perhaps most common approach towards building a recommendation model is by
+trying to approximate the matrix $\mathbf{X}_{mn}$ as the product of two
+lower-dimensional matrices $\mathbf{A}_{mk}$ and $\mathbf{B}_{nk}$ (with
+$k \ll m$ and $k \ll n$), representing latent user and item factors/components,
+respectively (which are the model parameters to estimate) - i.e.
+$$
+\mathbf{X} \approx \mathbf{A} \mathbf{B}^T
+$$
+In the explicit-feedback setting (e.g. movie ratings), this is typically done by
+trying to minimize squared errors with respect to the **observed** entries in
+$\mathbf{X}$, while in implicit-feedback settings this is typically done by turning the
+$\mathbf{X}$ matrix into a binary matrix which has a one if the observation is observed
+and a zero if not, using the actual values (e.g. number of times that a song was played)
+instead as weights for the positive entries, thereby looking at **all** entries rather
+than just the observed (non-zero) values - e.g.:
+$$
+\min_{\mathbf{A}, \mathbf{B}} \sum_{u=1}^{m} \sum_{i=1}^{n} x_{ui} (I_{x_{ui}>0} - \mathbf{a}_u \cdot \mathbf{b}_i)^2
+$$
+
+The recommendations for a given user are then produced by calculating the full products
+between that user vector $\mathbf{a}_u$ and the $\mathbf{B}$ matrix, sorting these
+predicted scores in descending order.
+
+For a better overview of implicit-feedback matrix factorization, see the paper
+_Hu, Yifan, Yehuda Koren, and Chris Volinsky. "Collaborative filtering for implicit feedback datasets." 2008 Eighth IEEE International Conference on Data Mining. Ieee, 2008._
+
+## Evaluating recommendation models
+
+Such matrix factorization models are commonly evaluated by setting aside a small amount
+of users as hold-out for evaluation, fitting a model to all the remaining users and
+items. Then, from the evaluation users, a fraction of their interactions data is set as a
+hold-out test set, while their latent factors are computed using the rest of the data
+and the previously fitted model from the other users.
+
+Then, top-K recommendations for each user are produced, discarding the non-hold-out
+items with which their latent factors were just determined, and these top-K lists are
+compared against the hold-out test items, seeing how well they do at ranking them near
+the top vs. how they rank the remainder of the items.
+
+** *
+
+This package can be used to calculate many recommendation quality metrics given the
+user and item factors and the train-test data split that was used, including:
+
+* **P\@K** ("precision-at-k"): this is the most intuitive metric. It calculates the
+proportion of the top-K recommendations that include items from the test set for
+a given user - i.e.
+$$
+P@K = \frac{1}{k} \sum_{i=1}^k
+\begin{cases}
+    1, & r_i \in \mathcal{T}\\
+    0, & \text{otherwise}
+\end{cases}
+$$
+Where $r_i$ is the item ranked at position $i$ by the model (sorting the predicted
+scores in descending order, after excluding the items in the training data for that 
+user), and $\mathcal{T}$ is the set of items that are in the test set for that user.
+
+    Note that some papers and libraries define $P@K$ differently, see the second
+version below.
+
+* **TP\@K** (truncated $P@K$): same calculation as $P@K$, but will instead divide by
+the minimum between $k$ and the number of test items:
+$$
+TP@K = \frac{1}{\min\{k, |\mathcal{T}|\}} \sum_{i=1}^k
+\begin{cases}
+    1, & r_i \in \mathcal{T}\\
+    0, & \text{otherwise}
+\end{cases}
+$$
+
+    The "truncated" prefix is a non-standard nomenclature introduced here to
+differentiate it from the other $P@K$ metric.
+
+* **R\@K** ("recall-at-k"): while $P@K$ offers an intuitive metric that captures what
+a recommender system aims at being good at, it does not capture the fact that,
+the more test items there are, the higher the chances that they will be included in the
+top-K recommendations. Recall instead looks at what proportion of the test
+items would have been retrieved with the top-K recommended list:
+$$
+R@K = \frac{1}{|\mathcal{T}|} \sum_{i=1}^k
+\begin{cases}
+    1, & r_i \in \mathcal{T}\\
+    0, & \text{otherwise}
+\end{cases}
+$$
+
+* **AP\@K** ("average precision-at-k"): precision and recall look at all the items
+in the top-K equally, whereas one might want to take into account also the ranking
+within this top-K list, for which this metric comes in handy.
+"Average Precision" tries to reflect the precisions that would be obtained at
+different recalls:
+$$
+AP@K = \frac{1}{|\mathcal{T}|} \sum_{i=1}^k
+\begin{cases}
+    P@i, & r_i \in \mathcal{T}\\
+    0, & \text{otherwise}
+\end{cases}
+$$
+$AP@K$ is a metric which to some degree considers precision, recall, and rank within
+top-K. Intuitively, it tries to approximate the are under a precision-recall tradeoff
+curve. Its average across users is typically called "MAP\@K" or "Mean Average Precision".
+
+    **Important:** many authors define $AP@K$ differently, such as dividing by the minimum
+between $k$ and $|\mathcal{T}|$ instead, or as the average for P\@1..P\@K (either as-is
+or stopping the calculation after already retrieving all test items).
+See below for the other version.
+
+* **TAP\@K** (truncated $AP@K$): a truncated version of the
+$AP@K$ metric, which will instead divide it by the minimum between $k$ and the
+number of test items. Just like for $TP@K$, the "truncated" prefix is a non-standard
+nomenclature used here to differentiate it from the other more typical $AP@K$.
+
+* **NDCG\@K** ("normalized discounted cumulative gain at k"): while the earlier metrics
+look at just the presence of an item in the test set, these items might not all be as
+good, with some of them having higher observed values than others. NDCG aims at
+judging these values, but discounted according to the rank in the top-K list. First
+it calculates the unstandardized discounted cumulative gain:
+$$
+DCG@K = \sum_{i=1}^{k} \frac{C_{r_i}}{log_2 (1+i)}
+$$
+Where $C_{r_i}$ indicates the observed interaction value in the test data for item
+$r_i$, and is zero if the item was not in the test data. The DCG\@K metric is then
+standardized by dividing it by the maximum achievable DCG\@K for the test data:
+$$
+NDCG@K = \frac{DCG@K}{\max DCG@K}
+$$
+
+    Unlike the other metrics, NDCG can handle data which contains "dislikes" in the
+form of negative values. If there are no negative values in the test data, it will
+be bounded between zero and one.
+
+* **Hit\@K** (from which "Hit Rate" is calculated): this is a simpler yes/no metric
+that looks at whether any of the top-K recommended items were in the test set for
+a given user:
+$$
+Hit@K = \max_{i=1..K}
+\begin{cases}
+    1, & r_i \in \mathcal{T}\\
+    0, & \text{otherwise}
+\end{cases}
+$$
+The average of this metric across users is typically called "Hit Rate".
+
+* **RR\@K** ("reciprocal rank at k", from which "MRR" or "mean reciprocal rank"
+is calculated):
+this metric only looks at the rank of the first recommended item that is in the test set,
+and outputs its inverse:
+$$
+RR@K = \max_{i=1..K} \frac{1}{i} \:\:\:\text{s.t.}\:\:\: r_i \in \mathcal{T}
+$$
+The average of this metric across users is typically called "Mean Reciprocal Rank".
+
+* **ROC AUC** ("area under the receiver-operating characteristic curve"): see the
+[Wikipedia entry](https://en.wikipedia.org/wiki/Receiver_operating_characteristic)
+for details. While the metrics above only looked at the top-K
+recommended items, this metric looks at the full ranking of items instead, and
+produces a standardized number between zero and one in which 0.5 denotes random
+predictions.
+
+* **PR AUC** ("area under the precision-recall curve"): while ROC AUC provides an
+overview of the overall ranking, one is typically only interested in how well it
+retrieves test items within top ranks, and for this the area under the
+precision-recall curve can do a better job at judging rankings, albeit the metric
+itself is not standardized and its minimum does not go as low as zero.
+
+    The metric is calculated using the fast but not-so-precise rectangular method,
+whose formula corresponds to the AP\@K metric with K=N. Some papers and libraries
+call this the average of this metric the "MAP" or "Mean Average Precision" instead
+(without the "\@K").
+
+_(For more details about the metrics, see the package documentation:
+`?calc.reco.metrics`)_
+
+**NOT** covered by this package:
+
+* Metrics that look at the rareness of the items recommended (to evaluate so-called
+"serendipity").
+
+* Metrics that look at "discoverability".
+
+* Metrics that take into account the diversity of the ranked lists.
+
+** *
+
+Now a practical example using the library
+[cmfrec](https://cran.r-project.org/package=cmfrec) and the MovieLens100K data,
+taken from the [recommenderlab](https://cran.r-project.org/package=recommenderlab)
+package.
+
+Note that this is an explicit-feedback dataset about movie ratings. Here it will be
+converted to implicit-feedback by setting movies with a rating of 4 and 5 stars
+as the positive (observed) data, while the others will be set as negative (unobserved).
+
+#### Loading the data
+
+This section will load the MovieLens100K data and filter out observations with a
+rating of less than 4 stars in order to have something that resembles implicit feedback.
+
+```{r, message=FALSE, eval=FALSE}
+library(Matrix)
+library(MatrixExtra)
+library(data.table)
+library(kableExtra)
+library(recommenderlab)
+library(cmfrec)
+library(recometrics)
+
+data(MovieLense)
+X_raw <- MovieLense@data
+
+### Converting it to implicit-feedback
+X_implicit <- as.coo.matrix(filterSparse(X_raw, function(x) x >= 4))
+str(X_implicit)
+```
+```{r, message=FALSE, echo=FALSE}
+### Note: at the time or writing, the CRAN version of MatrixExtra does not
+### yet have the function 'filterSparse', hence this code.
+library(Matrix)
+library(MatrixExtra)
+library(data.table)
+library(kableExtra)
+library(recommenderlab)
+library(cmfrec)
+library(recometrics)
+
+data(MovieLense)
+X_raw <- MovieLense@data
+
+### Converting it to implicit-feedback
+X_implicit <- as.coo.matrix(X_raw)
+X_implicit@i <- X_implicit@i[X_implicit@x >= 4]
+X_implicit@j <- X_implicit@j[X_implicit@x >= 4]
+X_implicit@x <- X_implicit@x[X_implicit@x >= 4]
+str(X_implicit)
+```
+
+#### Creating a train-test split
+
+Now leaving aside a random sample of 100 users for model evaluation, for whom 30%
+of the data will be left as a hold-out test set.
+
+```{r}
+reco_split <- create.reco.train.test(
+    X_implicit,
+    users_test_fraction = NULL,
+    max_test_users = 100,
+    items_test_fraction = 0.3,
+    seed = 123
+)
+X_train <- reco_split$X_train ## Train data for test users
+X_test <- reco_split$X_test ## Test data for test users
+X_rem <- reco_split$X_rem ## Data to fit the model
+users_test <- reco_split$users_test ## IDs of the test users
+```
+
+#### Establishing baselines
+
+In order to determine if a personalized recommendation model is bringing value or not,
+it's logical to compare such model against the simplest possible ways of making
+recommendations, such as:
+
+* Making random predictions.
+* Always predicting the same score for each item regardless of the
+user (non-personalized).
+
+This section creates such baselines to compare against.
+```{r}
+### Random recommendations (random latent factors)
+set.seed(123)
+UserFactors_random <- matrix(rnorm(nrow(X_test) * 5), nrow=5)
+ItemFactors_random <- matrix(rnorm(ncol(X_test) * 5), nrow=5)
+
+### Non-personalized recommendations
+model_baseline <- cmfrec::MostPopular(as.coo.matrix(X_rem), implicit=TRUE)
+item_biases <- model_baseline$matrices$item_bias
+```
+
+
+#### Fitting models
+
+This section will fit a few models in order to have different ranked lists to evaluate:
+
+* The typical implicit-feedback matrix factorization model described at the beginning,
+which considers all the entries in the matrix as zero or one with weights, minimizing
+squared error across all of them. This is known as the "weighted regularized
+matrix factorization" (WRMF) model or the implicit-ALS ("iALS") model.
+* The classic explicit-feedback model, using the full explicit-feedback ratings data.
+This model minimizes squared error across the observed entries only, and uses a
+regularization parameter which scales with the number of entries for each user and item
+(hence the name "Weighted-Lambda Regularized").
+* Another explicit-feedback model, but without scaling the regularization parameter
+(this tends to result in higher RMSE but much better top-K recommendations),
+and additionally factorizing also a binarized version of the explicit-feedback data
+(without weights) as a secondary objective. Note that this model still minimizes
+squared error with respected to the observed entries, but the exact objective is
+slightly different from that of the "Weighted-Lambda" model.
+
+All of these models are taken from the `cmfrec` package - see its documentation for
+more details about the models.
+
+**Important:** for the explicit-feedback models, it's not possible to use the same
+train-test split strategy as for the implicit-feedback variants, as the training
+data contains only 4 and 5 stars, which does not signal any dislikes and thus puts
+these models at a disadvantage. As such, here the user factors will be obtained from
+the full data (train+test), which gives them a quite unfair advantage compared to the
+other models.
+
+In theory, one could also split the full ratings data, and filter out low-star
+ratings in the test set only, but that would still distort a bit the metrics for
+implicit-feedback models. Alternatively, one could adjust the WRMF model to take
+low-star ratings as more negative entries with higher weight (e.g. giving
+them a value of -1 and a weight of 5 minus rating), which is supported by e.g.
+`cmfrec`. Note however that the only metric in this package that can accomodate
+such a scenatio (implicit feedback plus dislikes) is the $NDCG@K$ metric.
+
+
+```{r, eval=FALSE}
+### Typical implicit-feedback ALS model
+### a.k.a. "WRMF" (weighted regularized matrix factorization)
+set.seed(123)
+model_wrmf <- cmfrec::CMF_implicit(as.coo.matrix(X_rem), k=10, verbose=FALSE)
+UserFactors_wrmf <- t(cmfrec::factors(model_wrmf, X_train))
+
+### As a comparison, this is the typical explicit-feedback model,
+### implemented by software such as Spark,
+### and called "Weighted-Lambda-Regularized Matrix Factorization".
+### Note that it determines the user factors using the train+test data.
+set.seed(123)
+model_wlr <- cmfrec::CMF(as.coo.matrix(X_raw[-users_test, ]),
+                         lambda=0.1, scale_lam=TRUE,
+                         user_bias=FALSE, item_bias=FALSE,
+                         k=10, verbose=FALSE)
+UserFactors_wlr <- t(cmfrec::factors(model_wlr, as.csr.matrix(X_raw)[users_test,]))
+
+### This is a different explicit-feedback model which
+### uses the same regularization for each user and item
+### (as opposed to the "weighted-lambda" model) and which
+### adds "implicit features", which are a binarized version
+### of the input data, but without weights.
+### Note that it determines the user factors using the train+test data.
+set.seed(123)
+model_hybrid <- cmfrec::CMF(as.coo.matrix(X_raw[-users_test, ]),
+                            lambda=20, scale_lam=FALSE,
+                            user_bias=FALSE, item_bias=FALSE,
+                            add_implicit_features=TRUE,
+                            k=10, verbose=FALSE)
+UserFactors_hybrid <- t(cmfrec::factors(model_hybrid, as.csr.matrix(X_raw)[users_test,]))
+```
+```{r, echo=FALSE}
+### Don't overload CRAN servers
+if (!is_check) {
+    set.seed(123)
+    model_wrmf <- cmfrec::CMF_implicit(as.coo.matrix(X_rem), k=10, verbose=FALSE)
+    UserFactors_wrmf <- t(cmfrec::factors(model_wrmf, X_train))
+    
+    set.seed(123)
+    model_wlr <- cmfrec::CMF(as.coo.matrix(X_raw[-users_test, ]),
+                             lambda=0.1, scale_lam=TRUE,
+                             user_bias=FALSE, item_bias=FALSE,
+                             k=10, verbose=FALSE)
+    UserFactors_wlr <- t(cmfrec::factors(model_wlr, as.csr.matrix(X_raw)[users_test,]))
+    
+    set.seed(123)
+    model_hybrid <- cmfrec::CMF(as.coo.matrix(X_raw[-users_test, ]),
+                                lambda=20, scale_lam=FALSE,
+                                user_bias=FALSE, item_bias=FALSE,
+                                add_implicit_features=TRUE,
+                                k=10, verbose=FALSE)
+    UserFactors_hybrid <- t(cmfrec::factors(model_hybrid, as.csr.matrix(X_raw)[users_test,]))
+} else {
+    set.seed(123)
+    model_wrmf <- cmfrec::CMF_implicit(as.coo.matrix(X_rem), k=3,
+                                       verbose=FALSE, niter=2, nthreads=1)
+    UserFactors_wrmf <- t(cmfrec::factors(model_wrmf, X_train))
+}
+```
+
+#### Other models
+
+The MovieLens100K data used here comes with metadata/attributes about the users
+(gender, occupation, age, among others) and the items (genre and year of release),
+which so far have not been incorporated into these models.
+
+One simple way of adding this secondary information into the same WRMF model is
+through the concept of "Collective Matrix Factorization", which does so by also
+factorizing the side information matrices, but using the same user/item
+factors - see the documentation of `cmfrec` for more details about this approach.
+
+As well, one typical trick in the explicit-feedback variant is to add a fixed
+bias/intercept for each user and item, which is also possible to do in the
+WRMF model by making some slight modifications to the optimization procedure.
+
+This section will fit additional variations of the WRMF model to compare against:
+
+* The "collective" version, using side information ("CWRMF"). Note that the
+side information needs to be processed from its raw form first. The side information
+acts as an implicit regularizer (informally, the factors now need to explain both
+the observed interactions and the side attributes), and as such, the optimal
+regularization for this kind of model is typically lower than without the
+side information.
+* The "biased" version ("bWRMF"), but adding only item biases as the user biases
+do not tend to improve results. Note that the package `cmfrec` does not provide this
+option for implicit-feedback models, but it offers a lot of flexibility in what
+kind of objective to optimize in its main function (`CMF`), which can mimic a variety
+of models (e.g. the "Weighted-Lambda" or the "WRMF") depending on the
+parameters - here, the model will be fit by manually re-creating the WRMF
+variant (missing-as-zero, binarized matrix, positive entries
+weighted by the actual values plus one as in the original paper), which in turn
+requires manually creating the binarized `X` matrix and the weights.
+* Biases and collective matrix factorization are not mutually exclusive, so both
+of these can be combined into a biased collective WRMF ("bCWRMF").
+
+First processing the data as required for the new models:
+```{r, eval=!is_check}
+### Processing user side information
+U <- as.data.table(MovieLenseUser)[-users_test, ]
+mean_age <- U[, mean(age)]
+sd_age <- U[, sd(age)]
+levels_occ <- U[, levels(occupation)]
+MatrixExtra::restore_old_matrix_behavior()
+process.U <- function(U, mean_age,sd_age, levels_occ) {
+    U[, `:=`(
+        id = NULL,
+        age = (age - mean_age) / sd_age,
+        sex = as.numeric(sex == "M"),
+        occupation =  factor(occupation, levels_occ),
+        zipcode = NULL
+    )]
+    U <- Matrix::sparse.model.matrix(~.-1, data=U)
+    U <- as.coo.matrix(U)
+    return(U)
+}
+U <- process.U(U, mean_age,sd_age, levels_occ)
+U_train <- as.data.table(MovieLenseUser)[users_test, ]
+U_train <- process.U(U_train, mean_age,sd_age, levels_occ)
+
+### Processing item side information
+I <- as.data.table(MovieLenseMeta)
+mean_year <- I[, mean(year, na.rm=TRUE)]
+sd_year <- I[, sd(year, na.rm=TRUE)]
+I[
+    is.na(year), year := mean_year
+][, `:=`(
+    title = NULL,
+    year = (year - mean_year) / sd_year,
+    url = NULL
+)]
+I <- as.coo.matrix(I)
+
+### Manually re-creating a binarized matrix and weights
+### that will mimic the WRMF model
+X_rem_ones <- as.coo.matrix(X_rem)
+W_rem <- 1 + X_rem_ones@x
+X_rem_ones@x <- rep(1, length(X_rem_ones@x))
+X_train_ones <- X_train
+W_train <- 1 + X_train_ones@x
+X_train_ones@x <- rep(1, length(X_train_ones@x))
+```
+
+Now fitting the models:
+```{r, eval=!is_check}
+### WRMF model, but with item biases/intercepts
+set.seed(123)
+model_bwrmf <- cmfrec::CMF(X_rem_ones, weight=W_rem, NA_as_zero=TRUE,
+                           lambda=1, scale_lam=FALSE,
+                           center=FALSE, user_bias=FALSE, item_bias=TRUE,
+                           k=10, verbose=FALSE)
+UserFactors_bwrmf <- t(cmfrec::factors(model_bwrmf, X_train_ones, weight=W_train))
+
+
+### Collective WRMF model (taking user and item attributes)
+set.seed(123)
+model_cwrmf <- cmfrec::CMF_implicit(as.coo.matrix(X_rem), U=U, I=I,
+                                    NA_as_zero_user=TRUE, NA_as_zero_item=TRUE,
+                                    center_U=TRUE, center_I=TRUE,
+                                    lambda=0.1,
+                                    k=10, verbose=FALSE)
+UserFactors_cwrmf <- t(cmfrec::factors(model_cwrmf, X_train, U=U_train))
+
+### Collective WRMF plus item biases/intercepts
+set.seed(123)
+model_bcwrmf <- cmfrec::CMF(X_rem_ones, weight=W_rem, NA_as_zero=TRUE,
+                            U=U, I=I, center_U=FALSE, center_I=FALSE,
+                            NA_as_zero_user=TRUE, NA_as_zero_item=TRUE,
+                            lambda=0.1, scale_lam=FALSE,
+                            center=FALSE, user_bias=FALSE, item_bias=TRUE,
+                            k=10, verbose=FALSE)
+UserFactors_bcwrmf <- t(cmfrec::factors(model_bcwrmf, X_train_ones,
+                                        weight=W_train, U=U_train))
+```
+
+#### Calculating metrics
+
+Finally, calculating recommendation quality metrics for all these models:
+
+```{r, eval=FALSE}
+k <- 5 ## Top-K recommendations to evaluate
+
+### Baselines
+metrics_random <- calc.reco.metrics(X_train, X_test,
+                                    A=UserFactors_random,
+                                    B=ItemFactors_random,
+                                    k=k, all_metrics=TRUE)
+metrics_baseline <- calc.reco.metrics(X_train, X_test,
+                                      A=NULL, B=NULL,
+                                      item_biases=item_biases,
+                                      k=k, all_metrics=TRUE)
+
+### Simple models
+metrics_wrmf <- calc.reco.metrics(X_train, X_test,
+                                  A=UserFactors_wrmf,
+                                  B=model_wrmf$matrices$B,
+                                  k=k, all_metrics=TRUE)
+metrics_wlr <- calc.reco.metrics(X_train, X_test,
+                                 A=UserFactors_wlr,
+                                 B=model_wlr$matrices$B,
+                                 k=k, all_metrics=TRUE)
+metrics_hybrid <- calc.reco.metrics(X_train, X_test,
+                                    A=UserFactors_hybrid,
+                                    B=model_hybrid$matrices$B,
+                                    k=k, all_metrics=TRUE)
+
+### More complex models
+metrics_bwrmf <- calc.reco.metrics(X_train, X_test,
+                                   A=UserFactors_bwrmf,
+                                   B=model_bwrmf$matrices$B,
+                                   item_biases=model_bwrmf$matrices$item_bias,
+                                   k=k, all_metrics=TRUE)
+metrics_cwrmf <- calc.reco.metrics(X_train, X_test,
+                                   A=UserFactors_cwrmf,
+                                   B=model_cwrmf$matrices$B,
+                                   k=k, all_metrics=TRUE)
+metrics_bcwrmf <- calc.reco.metrics(X_train, X_test,
+                                    A=UserFactors_bcwrmf,
+                                    B=model_bcwrmf$matrices$B,
+                                    item_biases=model_bcwrmf$matrices$item_bias,
+                                    k=k, all_metrics=TRUE)
+```
+```{r, echo=FALSE}
+if (!is_check) {
+    k <- 5 ## Top-K recommendations to evaluate
+
+    ### Baselines
+    metrics_random <- calc.reco.metrics(X_train, X_test,
+                                        A=UserFactors_random,
+                                        B=ItemFactors_random,
+                                        k=k, all_metrics=TRUE)
+    metrics_baseline <- calc.reco.metrics(X_train, X_test,
+                                          A=NULL, B=NULL,
+                                          item_biases=item_biases,
+                                          k=k, all_metrics=TRUE)
+    
+    ### Simple models
+    metrics_wrmf <- calc.reco.metrics(X_train, X_test,
+                                      A=UserFactors_wrmf,
+                                      B=model_wrmf$matrices$B,
+                                      k=k, all_metrics=TRUE)
+    metrics_wlr <- calc.reco.metrics(X_train, X_test,
+                                     A=UserFactors_wlr,
+                                     B=model_wlr$matrices$B,
+                                     k=k, all_metrics=TRUE)
+    metrics_hybrid <- calc.reco.metrics(X_train, X_test,
+                                        A=UserFactors_hybrid,
+                                        B=model_hybrid$matrices$B,
+                                        k=k, all_metrics=TRUE)
+    
+    ### More complex models
+    metrics_bwrmf <- calc.reco.metrics(X_train, X_test,
+                                       A=UserFactors_bwrmf,
+                                       B=model_bwrmf$matrices$B,
+                                       item_biases=model_bwrmf$matrices$item_bias,
+                                       k=k, all_metrics=TRUE)
+    metrics_cwrmf <- calc.reco.metrics(X_train, X_test,
+                                       A=UserFactors_cwrmf,
+                                       B=model_cwrmf$matrices$B,
+                                       k=k, all_metrics=TRUE)
+    metrics_bcwrmf <- calc.reco.metrics(X_train, X_test,
+                                        A=UserFactors_bcwrmf,
+                                        B=model_bcwrmf$matrices$B,
+                                        item_biases=model_bcwrmf$matrices$item_bias,
+                                        k=k, all_metrics=TRUE)
+} else {
+    k <- 5 ## Top-K recommendations to evaluate
+
+    ### Baselines
+    metrics_random <- calc.reco.metrics(X_train, X_test,
+                                        A=UserFactors_random,
+                                        B=ItemFactors_random,
+                                        k=k, all_metrics=TRUE,
+                                        nthreads=1)
+    metrics_baseline <- calc.reco.metrics(X_train, X_test,
+                                          A=NULL, B=NULL,
+                                          item_biases=item_biases,
+                                          k=k, all_metrics=TRUE,
+                                          nthreads=1)
+    
+    ### Simple models
+    metrics_wrmf <- calc.reco.metrics(X_train, X_test,
+                                      A=UserFactors_wrmf,
+                                      B=model_wrmf$matrices$B,
+                                      k=k, all_metrics=TRUE,
+                                      nthreads=1)
+}
+```
+
+These metrics are by default returned as a data frame, with each user representing
+a row and each metric a column - example:
+```{r}
+metrics_baseline %>%
+    head(5) %>%
+    kable() %>%
+    kable_styling()
+```
+
+#### Comparing models
+
+In order to compare models, one can instead summarize these metrics across users:
+```{r, eval=FALSE}
+all_metrics <- list(
+    `Random` = metrics_random,
+    `Non-personalized` = metrics_baseline,
+    `Weighted-Lambda` = metrics_wlr,
+    `Hybrid-Explicit` = metrics_hybrid,
+    `WRMF (a.k.a. iALS)` = metrics_wrmf,
+    `bWRMF` = metrics_bwrmf,
+    `CWRMF` = metrics_cwrmf,
+    `bCWRMF` = metrics_bcwrmf
+)
+results <- all_metrics %>%
+    lapply(function(df) as.data.table(df)[, lapply(.SD, mean)]) %>%
+    data.table::rbindlist() %>%
+    as.data.frame()
+row.names(results) <- names(all_metrics)
+
+results %>%
+    kable() %>%
+    kable_styling()
+```
+```{r, echo=FALSE}
+if (!is_check) {
+    all_metrics <- list(
+        `Random` = metrics_random,
+        `Non-personalized` = metrics_baseline,
+        `Weighted-Lambda` = metrics_wlr,
+        `Hybrid-Explicit` = metrics_hybrid,
+        `WRMF (a.k.a. iALS)` = metrics_wrmf,
+        `bWRMF` = metrics_bwrmf,
+        `CWRMF` = metrics_cwrmf,
+        `bCWRMF` = metrics_bcwrmf
+    )
+} else {
+    all_metrics <- list(
+        `Random` = metrics_random,
+        `Non-personalized` = metrics_baseline,
+        `WRMF (a.k.a. iALS)` = metrics_wrmf
+    )
+}
+results <- all_metrics %>%
+    lapply(function(df) as.data.table(df)[, lapply(.SD, mean)]) %>%
+    data.table::rbindlist() %>%
+    as.data.frame()
+row.names(results) <- names(all_metrics)
+results %>%
+    kable() %>%
+    kable_styling()
+```
+
+From these metrics, the best-performing model overall seems to be CWRMF (collective
+version of WRMF or iALS model, which incorporates side information about users and
+items), but it does not dominate across all metrics.
+
+It is hard to conclude for example whether adding item biases to the WRMF or the
+CWRMF model is an improvement, as some metrics improve while others deteriorate, and
+this is where specific properties about the dataset and the desired recommendation
+goals have to come in mind (e.g. one might decide that $AP@K$ is simply the most
+informative metric and make a decision based on it, or perhaps look at more
+specialized metrics).
+
+** *
+
+To keep in mind:
+
+* These metrics were calculated on a sample of only 100 users, so their standard errors
+can be rather large, and most of them consider only the top-5 recommended items.
+* All of these models have hyperparameters (such as the number of latent factors and
+regularization) which have not been tuned. When tuned, the differences between models
+might look different that what was obtained here.
+* The data used here was an explicit-feedback dataset from which an "implicit-feedback"
+version was simulated by taking only the 4-star and 5-star ratings as the "observed"
+good items for each user.
+* This is a very small dataset (MovieLens100k), thus these metrics should be taken
+with a grain of salt.

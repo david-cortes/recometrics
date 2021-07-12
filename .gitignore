@@ -1,0 +1,33 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+
+# dist files
+dist/
+*.zip
+*.tar.gz
+
+recometrics/
+	wrapper.c
+	wrapper.cpp
+
+dist/
+	*.*
+
+build/
+    *.*
+	
+recometrics.egg-info/*
+
+*.so
+*.o
+*.Rhistory
+*.directory
+
+MANIFEST
+.Rproj.user
+recometrics.Rproj
+inst/doc
+
+test.py
+safe/*
