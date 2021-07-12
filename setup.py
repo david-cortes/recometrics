@@ -3,6 +3,7 @@ from setuptools import setup, Extension
 import numpy as np
 import sys, os
 from_rtd = os.environ.get('READTHEDOCS') == 'True'
+from_rtd = False
 if not from_rtd:
     from Cython.Distutils import build_ext
 else:

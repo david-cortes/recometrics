@@ -15,9 +15,9 @@ import sys
 sys.path.insert(0, os.path.abspath('.'))
 # sys.path.insert(0, os.path.abspath('/.'))
 # sys.path.insert(0, os.path.abspath('..'))
-import mock 
-MOCK_MODULES = ['recometrics.cpp_funs', 'cpp_funs', 'pandas', 'numpy', 'scipy', 'scipy.sparse', 'cython', 'Cython', 'Cython.Distutils', 'matplotlib']
-sys.modules.update((mod_name, mock.MagicMock()) for mod_name in MOCK_MODULES)
+# import mock 
+# MOCK_MODULES = ['recometrics.cpp_funs', 'cpp_funs', 'pandas', 'numpy', 'scipy', 'scipy.sparse', 'cython', 'Cython', 'Cython.Distutils', 'matplotlib']
+# sys.modules.update((mod_name, mock.MagicMock()) for mod_name in MOCK_MODULES)
 
 
 # -- Project information -----------------------------------------------------
