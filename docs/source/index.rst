@@ -26,10 +26,11 @@ Package is available on PyPI, can be installed with
 Functions
 =========
 
-.. autofunction:: recometrics.calc_reco_metrics
-
-.. autofunction:: recometrics.split_reco_train_test
-
+.. automodule:: recometrics
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :inherited-members:
 
 Indices and tables
 ==================

@@ -18,6 +18,7 @@ exclude recometrics/*.c
 exclude recometrics/*.cpp
 exclude src/Makevars
 exclude src/Rwrapper.cpp
+exclude src/RcppExports.cpp
 exclude DESCRIPTION
 exclude NAMESPACE
 exclude .gitignore
@@ -32,3 +33,4 @@ prune examples/*
 prune vignettes/*
 prune tests/*
 prune safe/*
+exclude safe/*
