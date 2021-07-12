@@ -7,9 +7,8 @@ dist/
 *.zip
 *.tar.gz
 
-recometrics/
-	wrapper.c
-	wrapper.cpp
+recometrics/wrapper.c
+recometrics/wrapper.cpp
 
 dist/
 	*.*
