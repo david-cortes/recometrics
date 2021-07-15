@@ -261,7 +261,7 @@ as the positive (observed) data, while the others will be set as negative (unobs
 This section will load the MovieLens100K data and filter out observations with a
 rating of less than 4 stars in order to have something that resembles implicit feedback.
 
-```{r, message=FALSE, eval=FALSE}
+```{r, message=FALSE}
 library(Matrix)
 library(MatrixExtra)
 library(data.table)
@@ -275,27 +275,6 @@ X_raw <- MovieLense@data
 
 ### Converting it to implicit-feedback
 X_implicit <- as.coo.matrix(filterSparse(X_raw, function(x) x >= 4))
-str(X_implicit)
-```
-```{r, message=FALSE, echo=FALSE}
-### Note: at the time or writing, the CRAN version of MatrixExtra does not
-### yet have the function 'filterSparse', hence this code.
-library(Matrix)
-library(MatrixExtra)
-library(data.table)
-library(kableExtra)
-library(recommenderlab)
-library(cmfrec)
-library(recometrics)
-
-data(MovieLense)
-X_raw <- MovieLense@data
-
-### Converting it to implicit-feedback
-X_implicit <- as.coo.matrix(X_raw)
-X_implicit@i <- X_implicit@i[X_implicit@x >= 4]
-X_implicit@j <- X_implicit@j[X_implicit@x >= 4]
-X_implicit@x <- X_implicit@x[X_implicit@x >= 4]
 str(X_implicit)
 ```
 

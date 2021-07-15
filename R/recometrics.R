@@ -3,7 +3,7 @@
 #' @importClassesFrom float float32
 #' @importFrom methods new
 #' @importFrom parallel detectCores
-#' @importFrom MatrixExtra as.csr.matrix sort_sparse_indices
+#' @importFrom MatrixExtra as.csr.matrix sort_sparse_indices emptySparse
 #' @importFrom float fl dbl
 #' @importFrom RhpcBLASctl blas_set_num_threads blas_get_num_procs
 #' @useDynLib recometrics, .registration=TRUE
@@ -41,13 +41,6 @@ check.fraction <- function(x, var="x") {
     if (x <= 0 || x >= 1)
         stop(sprintf("'%s' must be between zero and one.", var))
     return(x)
-}
-
-get.empty.csr <- function(nrow, ncol) {
-    out <- new("dgRMatrix")
-    out@Dim <- as.integer(c(nrow, ncol))
-    out@p <- integer(nrow+1L)
-    return(out)
 }
 
 #' @export
@@ -430,7 +423,8 @@ calc.reco.metrics <- function(
         pr_auc <- TRUE
     }
     if (is.null(X_train)) {
-        X_train <- get.empty.csr(nrow(X_test), ncol(X_test))
+        X_train <- MatrixExtra::emptySparse(nrow(X_test), ncol(X_test),
+                                            format="R", dtype="d")
         consider_cold_start <- TRUE
     }
     

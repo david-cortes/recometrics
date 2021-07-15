@@ -26,8 +26,7 @@ test_that("Perfect ROC-AUC and PR-AUC", {
     k <- 2
     set.seed(1)
     pos <- sample(n, npos, replace=FALSE)
-    # X_test <- as.csr.matrix(sparseVector(i=pos, x=1, length=n))
-    X_test <- as(t(as.matrix(sparseVector(i=pos, x=1, length=n))), "RsparseMatrix")
+    X_test <- as.csr.matrix(sparseVector(i=pos, x=1, length=n))
     X_train <- as.csr.matrix(matrix(0, nrow=1, ncol=n))
     A <- matrix(1, nrow=k, ncol=1)
     B <- matrix(-100, nrow=k, ncol=n)
@@ -48,8 +47,7 @@ test_that("Zero ROC-AUC", {
     k <- 2
     set.seed(1)
     pos <- sample(n, npos, replace=FALSE)
-    # X_test <- as.csr.matrix(sparseVector(i=pos, x=1, length=n))
-    X_test <- as(t(as.matrix(sparseVector(i=pos, x=1, length=n))), "RsparseMatrix")
+    X_test <- as.csr.matrix(sparseVector(i=pos, x=1, length=n))
     X_train <- as.csr.matrix(matrix(0, nrow=1, ncol=n))
     A <- matrix(1, nrow=k, ncol=1)
     B <- matrix(100, nrow=k, ncol=n)
