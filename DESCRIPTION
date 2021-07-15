@@ -5,7 +5,7 @@ Version: 0.1.2
 Author: David Cortes
 Maintainer: David Cortes <david.cortes.rivera@gmail.com>
 URL: https://github.com/david-cortes/recometrics
-BugReports: https://github.com/david-cortes/recometrics
+BugReports: https://github.com/david-cortes/recometrics/issues
 Description: Calculates evaluation metrics for implicit-feedback recommender systems
   that are based on low-rank matrix factorization models, given the fitted model
   matrices and data, thus allowing to compare models from a variety of libraries.

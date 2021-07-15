@@ -72,10 +72,8 @@ pip install recometrics
 * R:
 
 ```r
-remotes::install_github("david-cortes/recometrics")
+install.packages("recometrics")
 ```
-
-(Coming to CRAN soon)
 
 For better performance, it's recommended to compile the package from source with extra optimizations `-O3` and `-march=native` - in Linux, this can be done by creating a file `~/.R/Makevars` containing this line: `CXX11FLAGS += -O3 -march=native` (plus an empty line at the end) (this file should be created before installing `recometrics`).
 
@@ -88,7 +86,7 @@ Library is a self-contained templated header file (`src/recometrics.hpp`). Can b
 
 * Python: documentation is available at [ReadTheDocs](http://recometrics.readthedocs.io).
 
-* R: documentation is internally available in the package (e.g. `?calc.reco.metrics`). Coming to CRAN soon.
+* R: documentation is internally available on [CRAN](https://cran.r-project.org/web/packages/recometrics/index.html).
 
 * C++: documentation is available in the header file [src/recometrics.hpp](https://github.com/david-cortes/recometrics/blob/master/src/recometrics.hpp).
 
@@ -98,7 +96,7 @@ Applied examples with public data and different libraries for fitting models:
 
 * [Python notebook](http://nbviewer.jupyter.org/github/david-cortes/recometrics/blob/master/examples/recometrics_example.ipynb) (LastFM-360K dataset, using libraries `implicit` and `lightfm`).
 
-* [R vignette](http://htmlpreview.github.io/?https://github.com/david-cortes/recometrics/blob/master/examples/Evaluating_recommender_systems.html) (MovieLens100K dataset, using library `cmfrec`).
+* [R vignette](https://cran.r-project.org/web/packages/recometrics/vignettes/Evaluating_recommender_systems.html) (MovieLens100K dataset, using library `cmfrec`).
 
 # Sample usage
 
