@@ -219,6 +219,20 @@ check.fraction <- function(x, var="x") {
 #' \href{https://github.com/david-cortes/R-openblas-in-windows}{this link}
 #' for instructions on getting OpenBLAS in R for Windows
 #' (Alternatively, Microsoft's R distribution comes with MKL preinstalled).
+#' 
+#' Doing computations in float32 precision depends on the package
+#' \href{https://cran.r-project.org/package=float}{float}, and as such comes
+#' with some caveats:\itemize{
+#' \item On Windows, if installing `float` from CRAN, it will use very unoptimized
+#' routines which will likely result in a slowdown compared to using regular
+#' double (numeric) type. Getting it to use an optimized BLAS library is not as
+#' simple as substituting the Rblas DLL - see the
+#' \href{https://github.com/wrathematics/float}{package's README} for details.
+#' \item On macOS, it will use static linking for `float`, thus if changing the BLAS
+#' library used by R, it will not change the float32 functions, and getting good
+#' performance out of it might require compiling it from source with `-march=native`
+#' flag.
+#' }
 #' @param X_train Training data for user-item interactions, with users denoting rows,
 #' items denoting columns, and values corresponding to confidence scores.
 #' Entries in `X_train` and `X_test` for each user should not intersect (that is,
