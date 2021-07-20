@@ -361,7 +361,6 @@ such a scenatio (implicit feedback plus dislikes) is the $NDCG@K$ metric.
 ```{r, eval=FALSE}
 ### Typical implicit-feedback ALS model
 ### a.k.a. "WRMF" (weighted regularized matrix factorization)
-set.seed(123)
 model_wrmf <- cmfrec::CMF_implicit(as.coo.matrix(X_rem), k=10, verbose=FALSE)
 UserFactors_wrmf <- t(cmfrec::factors(model_wrmf, X_train))
 
@@ -369,7 +368,6 @@ UserFactors_wrmf <- t(cmfrec::factors(model_wrmf, X_train))
 ### implemented by software such as Spark,
 ### and called "Weighted-Lambda-Regularized Matrix Factorization".
 ### Note that it determines the user factors using the train+test data.
-set.seed(123)
 model_wlr <- cmfrec::CMF(as.coo.matrix(X_raw[-users_test, ]),
                          lambda=0.1, scale_lam=TRUE,
                          user_bias=FALSE, item_bias=FALSE,
@@ -382,7 +380,6 @@ UserFactors_wlr <- t(cmfrec::factors(model_wlr, as.csr.matrix(X_raw)[users_test,
 ### adds "implicit features", which are a binarized version
 ### of the input data, but without weights.
 ### Note that it determines the user factors using the train+test data.
-set.seed(123)
 model_hybrid <- cmfrec::CMF(as.coo.matrix(X_raw[-users_test, ]),
                             lambda=20, scale_lam=FALSE,
                             user_bias=FALSE, item_bias=FALSE,
@@ -393,18 +390,15 @@ UserFactors_hybrid <- t(cmfrec::factors(model_hybrid, as.csr.matrix(X_raw)[users
 ```{r, echo=FALSE}
 ### Don't overload CRAN servers
 if (!is_check) {
-    set.seed(123)
     model_wrmf <- cmfrec::CMF_implicit(as.coo.matrix(X_rem), k=10, verbose=FALSE)
     UserFactors_wrmf <- t(cmfrec::factors(model_wrmf, X_train))
     
-    set.seed(123)
     model_wlr <- cmfrec::CMF(as.coo.matrix(X_raw[-users_test, ]),
                              lambda=0.1, scale_lam=TRUE,
                              user_bias=FALSE, item_bias=FALSE,
                              k=10, verbose=FALSE)
     UserFactors_wlr <- t(cmfrec::factors(model_wlr, as.csr.matrix(X_raw)[users_test,]))
     
-    set.seed(123)
     model_hybrid <- cmfrec::CMF(as.coo.matrix(X_raw[-users_test, ]),
                                 lambda=20, scale_lam=FALSE,
                                 user_bias=FALSE, item_bias=FALSE,
@@ -412,7 +406,6 @@ if (!is_check) {
                                 k=10, verbose=FALSE)
     UserFactors_hybrid <- t(cmfrec::factors(model_hybrid, as.csr.matrix(X_raw)[users_test,]))
 } else {
-    set.seed(123)
     model_wrmf <- cmfrec::CMF_implicit(as.coo.matrix(X_rem), k=3,
                                        verbose=FALSE, niter=2, nthreads=1)
     UserFactors_wrmf <- t(cmfrec::factors(model_wrmf, X_train))
@@ -504,7 +497,6 @@ X_train_ones@x <- rep(1, length(X_train_ones@x))
 Now fitting the models:
 ```{r, eval=!is_check}
 ### WRMF model, but with item biases/intercepts
-set.seed(123)
 model_bwrmf <- cmfrec::CMF(X_rem_ones, weight=W_rem, NA_as_zero=TRUE,
                            lambda=1, scale_lam=FALSE,
                            center=FALSE, user_bias=FALSE, item_bias=TRUE,
@@ -513,7 +505,6 @@ UserFactors_bwrmf <- t(cmfrec::factors(model_bwrmf, X_train_ones, weight=W_train
 
 
 ### Collective WRMF model (taking user and item attributes)
-set.seed(123)
 model_cwrmf <- cmfrec::CMF_implicit(as.coo.matrix(X_rem), U=U, I=I,
                                     NA_as_zero_user=TRUE, NA_as_zero_item=TRUE,
                                     center_U=TRUE, center_I=TRUE,
@@ -522,7 +513,6 @@ model_cwrmf <- cmfrec::CMF_implicit(as.coo.matrix(X_rem), U=U, I=I,
 UserFactors_cwrmf <- t(cmfrec::factors(model_cwrmf, X_train, U=U_train))
 
 ### Collective WRMF plus item biases/intercepts
-set.seed(123)
 model_bcwrmf <- cmfrec::CMF(X_rem_ones, weight=W_rem, NA_as_zero=TRUE,
                             U=U, I=I, center_U=FALSE, center_I=FALSE,
                             NA_as_zero_user=TRUE, NA_as_zero_item=TRUE,
