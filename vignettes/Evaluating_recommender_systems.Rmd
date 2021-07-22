@@ -451,9 +451,9 @@ First processing the data as required for the new models:
 ```{r, eval=!is_check}
 ### Processing user side information
 U <- as.data.table(MovieLenseUser)[-users_test, ]
-mean_age <- U[, mean(age)]
-sd_age <- U[, sd(age)]
-levels_occ <- U[, levels(occupation)]
+mean_age <- mean(U$age)
+sd_age <- sd(U$age)
+levels_occ <- levels(U$occupation)
 MatrixExtra::restore_old_matrix_behavior()
 process.U <- function(U, mean_age,sd_age, levels_occ) {
     U[, `:=`(
@@ -473,8 +473,8 @@ U_train <- process.U(U_train, mean_age,sd_age, levels_occ)
 
 ### Processing item side information
 I <- as.data.table(MovieLenseMeta)
-mean_year <- I[, mean(year, na.rm=TRUE)]
-sd_year <- I[, sd(year, na.rm=TRUE)]
+mean_year <- mean(I$year, na.rm=TRUE)
+sd_year <- sd(I$year, na.rm=TRUE)
 I[
     is.na(year), year := mean_year
 ][, `:=`(
@@ -486,12 +486,10 @@ I <- as.coo.matrix(I)
 
 ### Manually re-creating a binarized matrix and weights
 ### that will mimic the WRMF model
-X_rem_ones <- as.coo.matrix(X_rem)
-W_rem <- 1 + X_rem_ones@x
-X_rem_ones@x <- rep(1, length(X_rem_ones@x))
-X_train_ones <- X_train
-W_train <- 1 + X_train_ones@x
-X_train_ones@x <- rep(1, length(X_train_ones@x))
+X_rem_ones <- as.coo.matrix(mapSparse(X_rem, function(x) rep(1, length(x))))
+W_rem <- as.coo.matrix(mapSparse(X_rem, function(x) x+1))
+X_train_ones <- as.coo.matrix(mapSparse(X_train, function(x) rep(1, length(x))))
+W_train <- as.coo.matrix(mapSparse(X_train, function(x) x+1))
 ```
 
 Now fitting the models:
