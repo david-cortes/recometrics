@@ -517,7 +517,6 @@ def calc_reco_metrics(
         msg_omp += "package was built without multi-threading "
         msg_omp += "support - see the project's GitHub page for "
         msg_omp += "more information."
-        warnings.warn(msg_omp)
         warn(msg_omp)
 
     if k > X_test.shape[1]:

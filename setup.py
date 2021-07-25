@@ -114,7 +114,7 @@ class build_ext_subclass( build_ext ):
 setup(
     name  = "recometrics",
     packages = ["recometrics"],
-    version = '0.1.3',
+    version = '0.1.3-1',
     cmdclass = {'build_ext': build_ext_subclass},
     author = 'David Cortes',
     author_email = 'david.cortes.rivera@gmail.com',
