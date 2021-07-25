@@ -117,6 +117,15 @@ BEGIN_RCPP
     return R_NilValue;
 END_RCPP
 }
+// R_has_openmp
+bool R_has_openmp();
+RcppExport SEXP _recometrics_R_has_openmp() {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    rcpp_result_gen = Rcpp::wrap(R_has_openmp());
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_recometrics_calc_metrics_double", (DL_FUNC) &_recometrics_calc_metrics_double, 25},
@@ -124,6 +133,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_recometrics_split_csr_selected_users", (DL_FUNC) &_recometrics_split_csr_selected_users, 6},
     {"_recometrics_split_csr_separated_users", (DL_FUNC) &_recometrics_split_csr_separated_users, 11},
     {"_recometrics_C_NAN_to_R_NA", (DL_FUNC) &_recometrics_C_NAN_to_R_NA, 1},
+    {"_recometrics_R_has_openmp", (DL_FUNC) &_recometrics_R_has_openmp, 0},
     {NULL, NULL, 0}
 };
 

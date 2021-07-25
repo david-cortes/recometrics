@@ -21,3 +21,7 @@ C_NAN_to_R_NA <- function(vec) {
     invisible(.Call(`_recometrics_C_NAN_to_R_NA`, vec))
 }
 
+R_has_openmp <- function() {
+    .Call(`_recometrics_R_has_openmp`)
+}
+

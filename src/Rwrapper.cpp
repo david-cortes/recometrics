@@ -611,3 +611,13 @@ void C_NAN_to_R_NA(SEXP vec)
     for (size_t ix = 0; ix < (size_t)n; ix++)
         x[ix] = std::isnan(x[ix])? NA_REAL : x[ix];
 }
+
+// [[Rcpp::export(rng = false)]]
+bool R_has_openmp()
+{
+    #ifdef _OPENMP
+    return true;
+    #else
+    return false;
+    #endif
+}

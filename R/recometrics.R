@@ -482,6 +482,14 @@ calc.reco.metrics <- function(
     k <- check.pos.int(k, "k", TRUE)
     min_pos_test <- check.pos.int(min_pos_test, "min_pos_test", TRUE)
     min_items_pool <- check.pos.int(min_items_pool, "min_items_pool", TRUE)
+
+    if (nthreads > 1L && !R_has_openmp()) {
+        msg <- paste0("Attempting to use more than 1 thread, but ",
+                      "package was compiled without OpenMP support.")
+        if (tolower(Sys.info()[["sysname"]]) == "darwin")
+            msg <- paste0(msg, " See https://mac.r-project.org/openmp/")
+        warning(msg)
+    }
     
     if (k > NCOL(X_test))
         stop("'k' should be smaller than the number of items.")
