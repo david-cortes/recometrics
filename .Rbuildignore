@@ -18,3 +18,5 @@
 ^src/recometrics_signatures\.hpp$
 ^src/recometrics_instantiated\.cpp$
 ^safe/.*$
+^a/.out$
+^a/.exe$

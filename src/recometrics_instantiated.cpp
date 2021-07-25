@@ -27,6 +27,15 @@
 
 #include "recometrics.hpp"
 
+bool get_has_openmp()
+{
+    #ifdef _OPENMP
+    return true;
+    #else
+    return false;
+    #endif
+}
+
 /* Note: for some reason, Cython generates uncompilable C++ code when using the
    templates in the header, so they had to be defined with explicit types.
    Otherwise, this file and the 'signatures' header are not needed. */

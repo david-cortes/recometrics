@@ -512,6 +512,14 @@ def calc_reco_metrics(
         nthreads = multiprocessing.cpu_count() + 1 + nthreads
     assert nthreads > 0
 
+    if (nthreads > 1) and (not cpp_funs._get_has_openmp()):
+        msg_omp  = "Attempting to use more than 1 thread, but "
+        msg_omp += "package was built without multi-threading "
+        msg_omp += "support - see the project's GitHub page for "
+        msg_omp += "more information."
+        warnings.warn(msg_omp)
+        warn(msg_omp)
+
     if k > X_test.shape[1]:
         raise ValueError("'k' should be smaller than the number of items.")
 

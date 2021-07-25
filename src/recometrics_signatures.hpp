@@ -43,6 +43,8 @@ using std::int32_t;
 #   define restrict 
 #endif
 
+bool get_has_openmp();
+
 void calc_metrics_double
 (
     const double *restrict A, const size_t lda, const double *restrict B, const size_t ldb,

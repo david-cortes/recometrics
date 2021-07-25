@@ -23,6 +23,8 @@ ctypedef fused real_t:
     float
 
 cdef extern from "recometrics_signatures.hpp":
+    c_bool get_has_openmp() nogil except +
+
     void calc_metrics_double(
         const double *A, const size_t lda, const double *B, const size_t ldb,
         const int32_t m, const int32_t n, const int32_t k,
@@ -188,6 +190,9 @@ cdef extern from "recometrics_signatures.hpp":
         const int32_t min_pos_test,
         uint64_t seed
     ) nogil except +
+
+def _get_has_openmp():
+    return get_has_openmp()
 
 cdef double* get_ptr_double(np.ndarray[double, ndim=1] a):
     if a.shape[0]:
