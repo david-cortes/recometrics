@@ -79,8 +79,6 @@ class build_ext_subclass( build_ext ):
                 e.extra_link_args.append(arg_omp3)
         else:
             set_omp_false()
-            for e in self.extensions:
-                e.sources = [re.sub(r"^(.*)return1\.pyx$", r"\1return0.pyx", s) for s in e.sources]
 
     def test_supports_compile_arg(self, comm):
         is_supported = False
