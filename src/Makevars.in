@@ -1,0 +1,5 @@
+FLOAT_LIBS = `${R_HOME}/bin${R_ARCH_BIN}/Rscript -e "float:::ldflags(static=Sys.info()[['sysname']] == 'Darwin')"`
+PKG_CPPFLAGS = -D_FOR_R @SUPPORTS_RESTRICT@
+PKG_CXXFLAGS = $(SHLIB_OPENMP_CXXFLAGS)
+PKG_LIBS = $(SHLIB_OPENMP_CXXFLAGS) $(BLAS_LIBS) $(FLIBS) $(FLOAT_LIBS)
+CXX_STD = CXX11

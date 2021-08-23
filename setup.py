@@ -21,6 +21,7 @@ class build_ext_subclass( build_ext ):
         else:
             self.add_march_native()
             self.add_openmp_linkage()
+            self.add_restrict_qualifier()
 
             for e in self.extensions:
                 # e.extra_compile_args += ['-O3', '-fopenmp', '-march=native', '-std=c++11']
@@ -109,12 +110,44 @@ class build_ext_subclass( build_ext ):
             pass
         return is_supported
 
+    def add_restrict_qualifier(self):
+        supports_restrict = False
+        try:
+            if not hasattr(self.compiler, "compiler_cxx"):
+                return None
+            print("--- Checking compiler support for '__restrict' qualifier")
+            fname = "recometrics_compiler_testing.cpp"
+            with open(fname, "w") as ftest:
+                ftest.write(u"int main(int argc, char**argv) {return 0;}\n")
+            try:
+                cmd = [self.compiler.compiler_cxx[0]]
+            except:
+                cmd = list(self.compiler.compiler_cxx)
+            val_good = subprocess.call(cmd + [fname])
+            try:
+                with open(fname, "w") as ftest:
+                    ftest.write(u"int main(int argc, char**argv) {double *__restrict x = nullptr; return 0;}\n")
+                val = subprocess.call(cmd + [fname])
+                supports_restrict = (val == val_good)
+            except:
+                return None
+        except:
+            pass
+        try:
+            os.remove(fname)
+        except:
+            pass
+        
+        if supports_restrict:
+            for e in self.extensions:
+                e.define_macros += [("SUPPORTS_RESTRICT", "1")]
+
 
 
 setup(
     name  = "recometrics",
     packages = ["recometrics"],
-    version = '0.1.3-1',
+    version = '0.1.4',
     cmdclass = {'build_ext': build_ext_subclass},
     author = 'David Cortes',
     author_email = 'david.cortes.rivera@gmail.com',

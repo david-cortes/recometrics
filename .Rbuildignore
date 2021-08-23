@@ -20,3 +20,7 @@
 ^safe/.*$
 ^a/.out$
 ^a/.exe$
+^config/.log$
+^config/.status$
+^autom4te.cache/.*$
+^src/Makevars$

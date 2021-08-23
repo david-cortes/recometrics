@@ -34,3 +34,7 @@ inst/doc
 
 test.py
 safe/*
+autom4te.cache/*
+config.log
+config.status
+src/Makevars
