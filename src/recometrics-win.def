@@ -1,0 +1,3 @@
+LIBRARY recometrics.dll
+EXPORTS
+ R_init_recometrics
