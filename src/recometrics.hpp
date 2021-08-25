@@ -837,8 +837,6 @@ void calc_metrics
                         if (hits == (int32_t)npos) break;
                     }
                 }
-                roc_auc[user] = 1. - (long double)(sum_ranks_pos - (npos * (npos + 1)) / 2)
-                                     / (long double)(npos * nneg);
                 pr_auc[user] = avg_p / (double)npos;
             }
         }
