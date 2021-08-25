@@ -51,9 +51,7 @@ using std::int32_t;
 #   define restrict 
 #endif
 
-#define restrict __restrict
-
-#if defined(_FOR_R)
+#if defined(_FOR_R) || defined(USE_BLAS)
 extern "C" double ddot_(const int *n, const double *dx, const int *incx, const double *dy, const int *incy);
 extern "C" float sdot_(const int *n, const float *dx, const int *incx, const float *dy, const int *incy);
 #endif
@@ -70,7 +68,7 @@ constexpr const int one = 1;
 [[gnu::hot]]
 static inline double dot1(const double *restrict x, const double *restrict y, const int n)
 {
-#if defined(_FOR_R)
+#if defined(_FOR_R) || defined(USE_BLAS)
     return ddot_(&n, x, &one, y, &one);
 #else
     double res = 0;
@@ -85,7 +83,7 @@ static inline double dot1(const double *restrict x, const double *restrict y, co
 [[gnu::hot]]
 static inline float dot1(const float *restrict x, const float *restrict y, const int n)
 {
-#if defined(_FOR_R)
+#if defined(_FOR_R) || defined(USE_BLAS)
     return sdot_(&n, x, &one, y, &one);
 #else
     float res = 0;
