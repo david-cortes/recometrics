@@ -134,6 +134,7 @@ public:
             if (this->is_active && handle_is_locked)
                 interrupt_switch = false;
         }
+        this->restore_handle();
     }
 
     void restore_handle() {
