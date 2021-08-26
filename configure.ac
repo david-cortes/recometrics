@@ -1,4 +1,4 @@
-AC_INIT([recometrics], 0.1.4)
+AC_INIT([recometrics], 0.1.5)
 AC_LANG(C++)
 AC_TRY_COMPILE(
     [],
