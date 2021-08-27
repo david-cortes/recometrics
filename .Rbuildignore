@@ -9,6 +9,8 @@
 ^recometrics/.*$
 ^build/.*(?!\.rds)$
 ^docs/.*$
+^dist/.*$
+^recometrics\.egg-info/.*$
 ^MANIFEST$
 ^MANIFEST\.in$
 ^README\.md$
