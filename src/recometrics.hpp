@@ -508,6 +508,9 @@ void calc_metrics
             if (pred_max == pred_min) goto set_as_NAN;
             if (std::isinf(pred_max) || std::isinf(pred_min)) goto set_as_NAN;
 
+            /* TODO: here could determine the magnitude of the noise to add according to
+               some middle ground between the minimum and maximum values, which are already
+               calculated by this point. */
             std::mt19937 rng_user(seed + (uint64_t)user);
             std::uniform_real_distribution<real_t> runif((real_t)(-1e-12), (real_t)1e-12);
             for (int32_t ix = 0; ix < move_to; ix++)
