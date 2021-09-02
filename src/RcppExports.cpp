@@ -5,6 +5,11 @@
 
 using namespace Rcpp;
 
+#ifdef RCPP_USE_GLOBAL_ROSTREAM
+Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
+Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
+#endif
+
 // calc_metrics_double
 Rcpp::List calc_metrics_double(Rcpp::NumericMatrix A, Rcpp::NumericMatrix B, Rcpp::IntegerVector Xtrain_csr_p, Rcpp::IntegerVector Xtrain_csr_i, Rcpp::IntegerVector Xtest_csr_p, Rcpp::IntegerVector Xtest_csr_i, Rcpp::NumericVector Xtest_csr, bool calc_p_at_k, bool calc_tp_at_k, bool calc_r_at_k, bool calc_ap_at_k, bool calc_tap_at_k, bool calc_ndcg_at_k, bool calc_hit_at_k, bool calc_rr_at_k, bool calc_roc_auc, bool calc_pr_auc, int k_metrics, bool break_ties_with_noise, int min_pos_test, int min_items_pool, bool consider_cold_start, bool cumulative, int nthreads, uint64_t seed);
 RcppExport SEXP _recometrics_calc_metrics_double(SEXP ASEXP, SEXP BSEXP, SEXP Xtrain_csr_pSEXP, SEXP Xtrain_csr_iSEXP, SEXP Xtest_csr_pSEXP, SEXP Xtest_csr_iSEXP, SEXP Xtest_csrSEXP, SEXP calc_p_at_kSEXP, SEXP calc_tp_at_kSEXP, SEXP calc_r_at_kSEXP, SEXP calc_ap_at_kSEXP, SEXP calc_tap_at_kSEXP, SEXP calc_ndcg_at_kSEXP, SEXP calc_hit_at_kSEXP, SEXP calc_rr_at_kSEXP, SEXP calc_roc_aucSEXP, SEXP calc_pr_aucSEXP, SEXP k_metricsSEXP, SEXP break_ties_with_noiseSEXP, SEXP min_pos_testSEXP, SEXP min_items_poolSEXP, SEXP consider_cold_startSEXP, SEXP cumulativeSEXP, SEXP nthreadsSEXP, SEXP seedSEXP) {
