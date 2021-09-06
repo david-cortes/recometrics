@@ -72,6 +72,7 @@ pip install --no-use-pep517 recometrics
 brew install libomp
 ```
 And then reinstall this package: `pip install --force-reinstall recometrics`.
+** *
 
 
 * R:
