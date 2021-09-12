@@ -131,7 +131,7 @@ class build_ext_subclass( build_ext ):
             val_good = subprocess.call(cmd + [fname])
             try:
                 with open(fname, "w") as ftest:
-                    ftest.write(u"#include <cstddef>\nint main(int argc, char**argv) {double *__restrict x = nullptr; return 0;}\n")
+                    ftest.write(u"int main(int argc, char**argv) {double *__restrict x = 0; return 0;}\n")
                 val = subprocess.call(cmd + [fname])
                 supports_restrict = (val == val_good)
             except:
@@ -152,7 +152,7 @@ class build_ext_subclass( build_ext ):
 setup(
     name  = "recometrics",
     packages = ["recometrics"],
-    version = '0.1.5',
+    version = '0.1.5-1',
     cmdclass = {'build_ext': build_ext_subclass},
     author = 'David Cortes',
     author_email = 'david.cortes.rivera@gmail.com',
