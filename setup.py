@@ -17,7 +17,7 @@ class build_ext_subclass( build_ext ):
         compiler = self.compiler.compiler_type
         if is_msvc:
             for e in self.extensions:
-                e.extra_compile_args += ['/O2', '/openmp', '/std:c++14', '/fp:fast']
+                e.extra_compile_args += ['/O2', '/openmp', '/std:c++14', '/fp:contract']
         else:
             self.add_march_native()
             self.add_openmp_linkage()
@@ -160,7 +160,7 @@ class build_ext_subclass( build_ext ):
 setup(
     name  = "recometrics",
     packages = ["recometrics"],
-    version = '0.1.5-3',
+    version = '0.1.5-4',
     cmdclass = {'build_ext': build_ext_subclass},
     author = 'David Cortes',
     author_email = 'david.cortes.rivera@gmail.com',
