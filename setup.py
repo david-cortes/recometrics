@@ -17,11 +17,12 @@ class build_ext_subclass( build_ext ):
         compiler = self.compiler.compiler_type
         if is_msvc:
             for e in self.extensions:
-                e.extra_compile_args += ['/O2', '/openmp', '/std:c++14']
+                e.extra_compile_args += ['/O2', '/openmp', '/std:c++14', '/fp:fast']
         else:
             self.add_march_native()
             self.add_openmp_linkage()
             self.add_restrict_qualifier()
+            self.add_no_math_errno()
 
             for e in self.extensions:
                 # e.extra_compile_args += ['-O3', '-fopenmp', '-march=native', '-std=c++11']
@@ -56,6 +57,13 @@ class build_ext_subclass( build_ext ):
         elif self.test_supports_compile_arg(arg_mcpu_native):
             for e in self.extensions:
                 e.extra_compile_args.append(arg_mcpu_native)
+
+    def add_no_math_errno(self):
+        arg_fnme = "-fno-math-errno"
+        if self.test_supports_compile_arg(arg_fnme):
+            for e in self.extensions:
+                e.extra_compile_args.append(arg_fnme)
+                e.extra_link_args.append(arg_fnme)
 
     def add_openmp_linkage(self):
         arg_omp1 = "-fopenmp"
@@ -152,7 +160,7 @@ class build_ext_subclass( build_ext ):
 setup(
     name  = "recometrics",
     packages = ["recometrics"],
-    version = '0.1.5-1',
+    version = '0.1.5-3',
     cmdclass = {'build_ext': build_ext_subclass},
     author = 'David Cortes',
     author_email = 'david.cortes.rivera@gmail.com',

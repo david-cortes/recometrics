@@ -1,7 +1,7 @@
 Package: recometrics
 Type: Package
 Title: Evaluation Metrics for Implicit-Feedback Recommender Systems
-Version: 0.1.5-2
+Version: 0.1.5-3
 Author: David Cortes
 Maintainer: David Cortes <david.cortes.rivera@gmail.com>
 URL: https://github.com/david-cortes/recometrics
