@@ -349,7 +349,7 @@ public:
         Seed used for random number generation. Only used when passing 'break_ties_with_noise=true'.
 */
 template <class real_t>
-[[gnu::optimize("no-math-errno")]]
+[[gnu::optimize("no-math-errno"), gnu::optimize("no-trapping-math")]]
 void calc_metrics
 (
     const real_t *restrict A, const size_t lda, const real_t *restrict B, const size_t ldb,
