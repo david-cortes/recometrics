@@ -1,4 +1,4 @@
-AC_INIT([recometrics], 0.1.5)
+AC_INIT([recometrics], 0.1.6)
 AC_LANG(C++)
 AC_COMPILE_IFELSE(
     [AC_LANG_PROGRAM([[]], [[double *__restrict x;]])],

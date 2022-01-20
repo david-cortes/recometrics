@@ -51,6 +51,14 @@ using std::int32_t;
 #   define restrict 
 #endif
 
+#if defined(__GNUC__) || defined(__clang__)
+    #define _recometrics_likely(x) __builtin_expect((bool)(x), true)
+    #define _recometrics_unlikely(x) __builtin_expect((bool)(x), false)
+#else
+    #define _recometrics_likely(x) (x)
+    #define _recometrics_unlikely(x) (x)
+#endif
+
 #if defined(_FOR_R) || defined(USE_BLAS)
 #ifndef _FOR_R
 extern "C" double ddot_(const int *n, const double *dx, const int *incx, const double *dy, const int *incy);
@@ -428,7 +436,7 @@ void calc_metrics
                    pred_buffer, ind_buffer, test_bool_buffer)
     for (int32_t user = 0; user < m; user++)
     {
-        if (
+        if (_recometrics_unlikely(
                 Xtest_csr_p[user] >= Xtest_csr_p[user+1] ||
                 ((
                     (Xtrain_csr_p[user+1] - Xtrain_csr_p[user]) +
@@ -437,7 +445,7 @@ void calc_metrics
                 (n - (Xtrain_csr_p[user+1] - Xtrain_csr_p[user])) < min_items_pool ||
                 (!consider_cold_start && Xtrain_csr_p[user] == Xtrain_csr_p[user+1]) ||
                 (Xtest_csr_p[user+1] - Xtest_csr_p[user] < min_pos_test)
-            )
+            ))
         {
             set_as_NAN:
             if (!cumulative) {
@@ -474,7 +482,7 @@ void calc_metrics
                             ) >= n;
         const bool k_leq_n = (n - (Xtrain_csr_p[user+1] - Xtrain_csr_p[user])) <= k_metrics;
 
-        if (k_leq_n && !roc_auc && !pr_auc && !ap_at_k && !tap_at_k && !rr_at_k)
+        if (_recometrics_unlikely(k_leq_n && !roc_auc && !pr_auc && !ap_at_k && !tap_at_k && !rr_at_k))
             goto set_as_NAN;
 
         if (interrupt_switch)
@@ -490,7 +498,7 @@ void calc_metrics
         
         A_thread = A + (size_t)user*lda;
         pred_thread = pred_buffer.get() + omp_get_thread_num()*n;
-        if ((uint64_t)n*(uint64_t)ldb < INT32_MAX)
+        if (_recometrics_likely((uint64_t)n*(uint64_t)ldb < INT32_MAX))
         {
             int32_t ldb_int = ldb;
             for (int32_t ix = 0; ix < move_to; ix++)
@@ -503,19 +511,19 @@ void calc_metrics
                 pred_thread[ind_thread[ix]] = dot1(A_thread, B + (size_t)ind_thread[ix]*ldb, k);
         }
 
-        if (break_ties_with_noise)
+        if (_recometrics_likely(break_ties_with_noise))
         {
             /* Before adding noise and sorting, determine whether the entries are valid */
             for (int32_t ix = 0; ix < move_to; ix++)
-                if (std::isnan(pred_thread[ind_thread[ix]])) goto set_as_NAN;
+                if (_recometrics_unlikely(std::isnan(pred_thread[ind_thread[ix]]))) goto set_as_NAN;
             real_t pred_min = std::numeric_limits<real_t>::max();
             real_t pred_max = std::numeric_limits<real_t>::lowest();
             for (int32_t ix = 0; ix < move_to; ix++) {
                 pred_max = (pred_max < pred_thread[ind_thread[ix]])? pred_thread[ind_thread[ix]] : pred_max;
                 pred_min = (pred_min > pred_thread[ind_thread[ix]])? pred_thread[ind_thread[ix]] : pred_min;
             }
-            if (pred_max == pred_min) goto set_as_NAN;
-            if (std::isinf(pred_max) || std::isinf(pred_min)) goto set_as_NAN;
+            if (_recometrics_unlikely(pred_max == pred_min)) goto set_as_NAN;
+            if (_recometrics_unlikely(std::isinf(pred_max) || std::isinf(pred_min))) goto set_as_NAN;
 
             /* TODO: here could determine the magnitude of the noise to add according to
                some middle ground between the minimum and maximum values, which are already
@@ -534,9 +542,9 @@ void calc_metrics
             {
                 real_t pred_max = pred_thread[ind_thread[0]];
                 real_t pred_min = pred_thread[ind_thread[k_metrics-1]];
-                if (std::isnan(pred_max) || std::isnan(pred_min)) goto set_as_NAN;
-                if (std::isinf(pred_max) || std::isinf(pred_min)) goto set_as_NAN;
-                if (pred_max == pred_min) goto set_as_NAN;
+                if (_recometrics_unlikely(std::isnan(pred_max) || std::isnan(pred_min))) goto set_as_NAN;
+                if (_recometrics_unlikely(std::isinf(pred_max) || std::isinf(pred_min))) goto set_as_NAN;
+                if (_recometrics_unlikely(pred_max == pred_min)) goto set_as_NAN;
             }
         }
 
@@ -548,9 +556,9 @@ void calc_metrics
             {
                 real_t pred_max = pred_thread[ind_thread[0]];
                 real_t pred_min = pred_thread[ind_thread[move_to-1]];
-                if (std::isnan(pred_max) || std::isnan(pred_min)) goto set_as_NAN;
-                if (std::isinf(pred_max) || std::isinf(pred_min)) goto set_as_NAN;
-                if (pred_max == pred_min) goto set_as_NAN;
+                if (_recometrics_unlikely(std::isnan(pred_max) || std::isnan(pred_min))) goto set_as_NAN;
+                if (_recometrics_unlikely(std::isinf(pred_max) || std::isinf(pred_min))) goto set_as_NAN;
+                if (_recometrics_unlikely(pred_max == pred_min)) goto set_as_NAN;
             }
         }
 
@@ -668,7 +676,7 @@ void calc_metrics
                         if (rr_at_k) rr_at_k_user[ix] = hits? ((double)1 / (double)(min_rank+1)) : 0.;
                     }
 
-                    if (!cumulative && hits >= move_to)
+                    if (_recometrics_unlikely(!cumulative && hits >= move_to))
                         break;
                     if (only_first_pos && hits)
                     {
@@ -701,7 +709,7 @@ void calc_metrics
 
             else
             {
-                if (k_metrics > move_to)
+                if (_recometrics_unlikely(k_metrics > move_to))
                 {
                     if (p_at_k) std::fill(p_at_k_user + move_to, p_at_k_user + k_metrics, NAN_);
                     if (tp_at_k) std::fill(tp_at_k_user + move_to, tp_at_k_user + k_metrics, NAN_);
@@ -739,7 +747,7 @@ void calc_metrics
             }
         }
 
-        if (k_leq_n)
+        if (_recometrics_unlikely(k_leq_n))
         {
             if (!cumulative) {
                 if (p_at_k) p_at_k[user] = NAN_;
@@ -802,7 +810,7 @@ void calc_metrics
         {
             for (int32_t ix = 0; ix < move_to; ix++)
             {
-                if (test_bool_thread[ind_thread[ix]])
+                if (_recometrics_unlikely(test_bool_thread[ind_thread[ix]]))
                 {
                     sum_ranks_pos += (uint64_t)(ix+1);
                     hits++;
@@ -819,7 +827,7 @@ void calc_metrics
         {
             for (int32_t ix = 0; ix < move_to; ix++)
             {
-                if (test_bool_thread[ind_thread[ix]])
+                if (_recometrics_unlikely(test_bool_thread[ind_thread[ix]]))
                 {
                     sum_ranks_pos += (uint64_t)(ix+1);
                     hits++;
@@ -842,7 +850,7 @@ void calc_metrics
             {
                 for (int32_t ix = 0; ix < move_to; ix++)
                 {
-                    if (test_bool_thread[ind_thread[ix]])
+                    if (_recometrics_unlikely(test_bool_thread[ind_thread[ix]]))
                     {
                         hits++;
                         avg_p += (double)hits / (double)(ix+1);
@@ -866,9 +874,10 @@ void calc_metrics
 
             real_t vmax = user_vstart[ind_thread[0]];
             real_t vmin = user_vstart[ind_thread[std::min(k_metrics, (int32_t)npos) - 1]];
-            if (std::isnan(vmax) || std::isinf(vmax) ||
+            if (_recometrics_unlikely(
+               (std::isnan(vmax) || std::isinf(vmax) ||
                 std::isnan(vmin) || std::isinf(vmin) ||
-                vmax <= 0)
+                vmax <= 0)))
             {
                 if (!cumulative)
                     ndcg_at_k[user] = NAN_;
@@ -883,12 +892,12 @@ void calc_metrics
             real_t last_val = user_vstart[ind_thread[std::min(k_metrics, (int32_t)npos) - 1]];
             if (!cumulative)
             {
-                if (std::isnan(last_val) || std::isinf(last_val)) {
+                if (_recometrics_unlikely(std::isnan(last_val) || std::isinf(last_val))) {
                     ndcg_at_k[user] = NAN_;
                     continue;
                 }
 
-                else if (last_val >= 0) {
+                else if (_recometrics_likely(last_val >= 0)) {
                     for (int32_t ix = 0; ix < std::min(k_metrics, (int32_t)npos); ix++)
                         idcg += (double)user_vstart[ind_thread[ix]] / std::log2(ix+2);
                     ndcg_at_k[user] = dcg / idcg;
@@ -910,7 +919,7 @@ void calc_metrics
                 #   pragma GCC diagnostic push
                 #   pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
                 #endif
-                if (!std::isnan(last_val) && last_val >= 0)
+                if (_recometrics_likely(!std::isnan(last_val) && last_val >= 0))
                 {
                     for (int32_t ix = 0; ix < std::min(k_metrics, (int32_t)npos); ix++)
                     {
