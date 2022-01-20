@@ -19,7 +19,11 @@ class build_ext_subclass( build_ext ):
             for e in self.extensions:
                 e.extra_compile_args += ['/O2', '/openmp', '/std:c++14', '/fp:contract', '/fp:except-']
         else:
-            self.add_march_native()
+            if not self.check_cflags_or_cxxflags_contain_arch():
+                self.add_march_native()
+            else:
+                for e in self.extensions:
+                    e.define_macros += [("USE_BLAS", None)]
             self.add_openmp_linkage()
             self.add_restrict_qualifier()
             self.add_no_math_errno()
@@ -48,6 +52,15 @@ class build_ext_subclass( build_ext ):
             ## '-fopenmp' flags. If you are using mac, and have an OMP-capable compiler,
             ## comment out the code below, or set 'use_omp' to 'True'.
         build_ext.build_extensions(self)
+
+    def check_cflags_or_cxxflags_contain_arch(self):
+        arch_list = ["-march", "-mcpu", "-mtune", "-msse", "-msse2", "-msse3", "-mssse3", "-msse4", "-msse4a", "-msse4.1", "-msse4.2", "-mavx", "-mavx2"]
+        for env_var in ("CFLAGS", "CXXFLAGS"):
+            if env_var in os.environ:
+                for flag in arch_list:
+                    if flag in os.environ[env_var]:
+                        return True
+        return False
 
     def add_march_native(self):
         arg_march_native = "-march=native"
@@ -168,7 +181,7 @@ class build_ext_subclass( build_ext ):
 setup(
     name  = "recometrics",
     packages = ["recometrics"],
-    version = '0.1.5-6',
+    version = '0.1.5-7',
     cmdclass = {'build_ext': build_ext_subclass},
     author = 'David Cortes',
     author_email = 'david.cortes.rivera@gmail.com',

@@ -6,6 +6,7 @@ from libc.string cimport memcpy
 from libc.stdint cimport int32_t, uint64_t
 from scipy.sparse import csr_matrix
 import ctypes
+from scipy.linalg.cython_blas cimport ddot, sdot
 
 ### TODO: here cython fails to compile the functions using fused types or templates,
 ### and depending on how it's done (fused/templates), might produce something compilable
@@ -21,6 +22,15 @@ ctypedef fused generic_t:
 ctypedef fused real_t:
     double
     float
+
+ctypedef double (*ddot__)(const int*, const double*, const int*, const double*, const int*) nogil
+ctypedef float (*sdot__)(const int*, const float*, const int*, const float*, const int*) nogil
+
+cdef public double ddot_(const int* n, const double* x, const int* incx, const double* y, const int* incy) nogil:
+    return (<ddot__>ddot)(n, x, incx, y, incy)
+
+cdef public float sdot_(const int* n, const float* x, const int* incx, const float* y, const int* incy) nogil:
+    return (<sdot__>sdot)(n, x, incx, y, incy)
 
 cdef extern from "recometrics_signatures.hpp":
     c_bool get_has_openmp() nogil except +
