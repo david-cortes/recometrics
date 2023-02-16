@@ -89,9 +89,9 @@ static inline double dot1(const double *restrict x, const double *restrict y, co
 #else
     double res = 0;
     #ifndef _MSC_VER
-    #pragma omp simd
+    #pragma omp simd reduction(+:res)
     #endif
-    for (int32_t ix = 0; ix < n; ix++) res += x[ix]*y[ix];
+    for (int32_t ix = 0; ix < n; ix++) res = std::fma(x[ix], y[ix], res);
     return res;
 #endif
 }
@@ -99,14 +99,14 @@ static inline double dot1(const double *restrict x, const double *restrict y, co
 [[gnu::hot]]
 static inline float dot1(const float *restrict x, const float *restrict y, const int n)
 {
-#if defined(_FOR_R) || defined(USE_BLAS)
+#if (defined(_FOR_R) && !defined(__APPLE__) && !defined(_WIN32)) || defined(USE_BLAS)
     return sdot_(&n, x, &one, y, &one);
 #else
     float res = 0;
     #ifndef _MSC_VER
-    #pragma omp simd
+    #pragma omp simd reduction(+:res)
     #endif
-    for (int32_t ix = 0; ix < n; ix++) res += x[ix]*y[ix];
+    for (int32_t ix = 0; ix < n; ix++) res = std::fma(x[ix], y[ix], res);
     return res;
 #endif
 }
