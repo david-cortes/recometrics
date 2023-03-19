@@ -89,9 +89,10 @@ class build_ext_subclass( build_ext ):
         return "DONT_SET_MARCH" in os.environ
 
     def add_march_native(self):
+        is_apple = sys.platform[:3].lower() == "dar"
         args_march_native = ["-march=native", "-mcpu=native"]
         for arg_march_native in args_march_native:
-            if self.test_supports_compile_arg(arg_march_native):
+            if self.test_supports_compile_arg(arg_march_native, with_c_comp=is_apple):
                 for e in self.extensions:
                     e.extra_compile_args.append(arg_march_native)
                 break
@@ -151,7 +152,7 @@ class build_ext_subclass( build_ext ):
         args_apple_omp2 = ["-Xclang", "-fopenmp", "-L/usr/local/lib", "-lomp", "-I/usr/local/include"]
         has_brew_omp = False
         if is_apple:
-            res_brew_pref = subprocess.run(["brew", "--prefix", "libomp"], capture_output=silent_tests)
+            res_brew_pref = subprocess.run(["brew", "--prefix", "libomp"], capture_output=True)
             if res_brew_pref.returncode == EXIT_SUCCESS:
                 has_brew_omp = True
                 brew_omp_prefix = res_brew_pref.stdout.decode().strip()
@@ -195,7 +196,10 @@ class build_ext_subclass( build_ext ):
         else:
             set_omp_false()
 
-    def test_supports_compile_arg(self, comm, with_omp=False):
+    # Note: in apple systems, it somehow might end up triggering the arguments with
+    # the C compiler instead of the CXX compiler. What's worse, sometimes this compiler
+    # thinks it's building for aarch64 even when executed in amd64.
+    def test_supports_compile_arg(self, comm, with_omp=False, with_c_comp=False):
         is_supported = False
         try:
             if not hasattr(self.compiler, "compiler_cxx"):
@@ -213,12 +217,20 @@ class build_ext_subclass( build_ext ):
                     cmd = self.compiler.compiler_cxx
             except Exception:
                 cmd = self.compiler.compiler_cxx
+            if with_c_comp:
+                if not isinstance(self.compiler.compiler, list):
+                    cmd0 = list(self.compiler.compiler)
+                else:
+                    cmd0 = self.compiler.compiler
             if with_omp:
                 with open(fname, "w") as ftest:
                     ftest.write(u"#include <omp.h>\nint main(int argc, char**argv) {return 0;}\n")
             try:
                 val = subprocess.run(cmd + comm + [fname], capture_output=silent_tests).returncode
                 is_supported = (val == EXIT_SUCCESS)
+                if is_supported and with_c_comp:
+                    val = subprocess.run(cmd0 + comm + [fname], capture_output=silent_tests).returncode
+                    is_supported = (val == EXIT_SUCCESS)
             except Exception:
                 is_supported = False
         except Exception:
@@ -268,7 +280,7 @@ class build_ext_subclass( build_ext ):
 setup(
     name  = "recometrics",
     packages = ["recometrics"],
-    version = '0.1.6-4',
+    version = '0.1.6-5',
     cmdclass = {'build_ext': build_ext_subclass},
     author = 'David Cortes',
     url = 'https://github.com/david-cortes/recometrics',
@@ -279,7 +291,10 @@ setup(
             language="c++",
             sources=["recometrics/wrapper.pyx", "src/recometrics_instantiated.cpp"],
             include_dirs=[np.get_include(), "src"],
-            define_macros=[("_FOR_PYTHON", None)]
+            define_macros=[
+                ("_FOR_PYTHON", None),
+                ("NDEBUG", None),
+            ]
             )
         ]
 )
