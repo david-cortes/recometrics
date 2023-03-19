@@ -9,6 +9,7 @@ dist/
 
 recometrics/wrapper.c
 recometrics/wrapper.cpp
+recometrics/wrapper.h
 
 dist/
 	*.*
