@@ -58,7 +58,7 @@ This package does **NOT** deal with other more specialized metrics evaluating e.
 
 * Python:
 
-**Note:** requires a C compiler configured for Python. See [this guide](https://github.com/david-cortes/installing-optimized-libraries) for instructions.
+**Note:** requires C/C++ compilers configured for Python. See [this guide](https://github.com/david-cortes/installing-optimized-libraries) for instructions.
 
 ```pip install recometrics```
 
