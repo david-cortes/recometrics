@@ -58,6 +58,8 @@ This package does **NOT** deal with other more specialized metrics evaluating e.
 
 * Python:
 
+**Note:** requires a C compiler configured for Python. See [this guide](https://github.com/david-cortes/installing-optimized-libraries) for instructions.
+
 ```pip install recometrics```
 
 Or if that fails:
@@ -91,6 +93,8 @@ Note that, if not using `-march=native`, it will rely on the BLAS library provid
 ** *
 
 * R:
+
+**Note:** This package greatly benefits from extra optimizations that aren't enabled by default for R packages. See [this guide](https://github.com/david-cortes/installing-optimized-libraries) for instructions on how to enable them.
 
 ```r
 install.packages("recometrics")
