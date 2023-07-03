@@ -5,7 +5,7 @@ from libcpp cimport bool as c_bool
 from libcpp.vector cimport vector
 from libc.string cimport memcpy
 from libc.stdint cimport int32_t, uint64_t
-from scipy.sparse import csr_matrix
+from scipy.sparse import csr_array
 import ctypes
 from scipy.linalg.cython_blas cimport ddot, sdot
 
@@ -516,7 +516,7 @@ cdef object cpp_csr_to_scipy(
     cdef np.ndarray[int32_t, ndim=1] Xcsr_i_ = cppvec_to_numpy[int32_t](Xcsr_i)
     cdef np.ndarray[generic_t, ndim=1] Xcsr_ = cppvec_to_numpy[generic_t](Xcsr)
     cdef int m = Xcsr_p_.shape[0] - 1
-    return csr_matrix((Xcsr_, Xcsr_i_, Xcsr_p_), shape=(m, n))
+    return csr_array((Xcsr_, Xcsr_i_, Xcsr_p_), shape=(m, n))
 
 cdef tuple split_csr_selected_users_double(
     X_csr_scipy,

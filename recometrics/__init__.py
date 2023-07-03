@@ -1,6 +1,6 @@
 import numpy as np, pandas as pd
 from . import cpp_funs
-from scipy.sparse import issparse, isspmatrix_csr, csr_matrix
+from scipy.sparse import issparse, csr_array
 from warnings import warn
 import re
 import multiprocessing
@@ -30,6 +30,15 @@ def _cast_indices_to_int32(X):
         X.indptr = X.indptr.astype(np.int32)
         X.indices = X.indices.astype(np.int32)
     return X
+
+def _as_csr(X):
+    if issparse(X):
+        if X.format != "csr":
+            X = X.tocsr()
+        X.sort_indices()
+        return X
+    else:
+        return csr_array(X)
 
 
 def calc_reco_metrics(
@@ -253,7 +262,7 @@ def calc_reco_metrics(
         if an item is the training data as a non-missing entry, it should not be in
         the test data as non-missing, and vice versa).
         
-        Should be passed as a sparse matrix in CSR format
+        Should be passed as a sparse array/matrix in CSR format
         from SciPy. Items not consumed by the user should not
         be present in this matrix.
         
@@ -460,7 +469,7 @@ def calc_reco_metrics(
     use_float = (A.dtype == ctypes.c_float) and (B.dtype == ctypes.c_float)
 
     if X_train is None:
-        X_train = csr_matrix(X_test.shape, dtype=ctypes.c_double if not use_float else ctypes.c_float)
+        X_train = csr_array(X_test.shape, dtype=ctypes.c_double if not use_float else ctypes.c_float)
         consider_cold_start = True
 
     assert issparse(X_train)
@@ -541,16 +550,8 @@ def calc_reco_metrics(
         B = np.c_[B, item_biases.reshape((-1,1))]
         item_biases = None
 
-    if not isspmatrix_csr(X_train):
-        X_train = csr_matrix(X_train)
-    else:
-        X_train.sort_indices()
-
-    if not isspmatrix_csr(X_test):
-        X_test = csr_matrix(X_test)
-    else:
-        if (not roc_auc) and (not pr_auc):
-            X_test.sort_indices()
+    X_train = _as_csr(X_train)
+    X_test = _as_csr(X_test)
     
     X_train = _cast_indices_to_int32(X_train)
     X_test = _cast_to_dtype(X_test, use_float)
@@ -685,7 +686,7 @@ def split_reco_train_test(
     ----------
     X : CSR(m, n)
         The implicit feedback data to split into training-testing-remainder
-        for evaluating recommender systems. Should be passed as a sparse CSR matrix from
+        for evaluating recommender systems. Should be passed as a sparse CSR array/matrix from
         SciPy, or will be converted to CSR if it isn't. Users should correspond to rows, items
         to columns, and non-zero values to observed user-item interactions.
 
@@ -747,11 +748,11 @@ def split_reco_train_test(
         Will return a tuple with two to four elements depending on the requested split
         type:
             * If passing ``split_type='all'``, will output 2 elements: "X_train" and "X_test",
-              both of which will be sparse CSR matrices
+              both of which will be sparse CSR array/matrices
               with the same number of rows and columns as the ``X`` that was passed as input.
             * If passing ``split_type='separated'``, will output 4 elements: "X_train" and "X_test"
               as above (but with a number of rows corresponding to the number of selected test
-              users instead), plus another CSR matrix "X_rem" which will contain the
+              users instead), plus another CSR array/matrix "X_rem" which will contain the
               data for the remainder of the users (those which were not selected for testing and
               on which the recommendation model is meant to be fitted), and finally "users_test"
               which will be an integer vector containing the indices of the users/rows in ``X``
@@ -813,10 +814,7 @@ def split_reco_train_test(
                 warn("'max_test_users' is larger than number of users. Will take all.")
             n_users_take = min(max_test_users, X.shape[0])
 
-    if not isspmatrix_csr(X):
-        X = csr_matrix(X)
-    else:
-        X.sort_indices()
+    X = _as_csr(X)
     if (not X.shape[0]) or (not X.shape[1]):
         raise ValueError("'X' cannot be empty.")
     if X.dtype not in (np.float32, np.float64):
