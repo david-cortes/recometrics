@@ -1,4 +1,4 @@
 pandas
 numpy
-scipy
+scipy>=1.11.1
 cython
