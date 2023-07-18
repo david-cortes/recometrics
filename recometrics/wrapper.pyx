@@ -34,7 +34,7 @@ cdef public float sdot_(const int* n, const float* x, const int* incx, const flo
     return (<sdot__>sdot)(n, x, incx, y, incy)
 
 cdef extern from "recometrics_signatures.hpp":
-    c_bool get_has_openmp() nogil except +
+    c_bool get_has_openmp() except + nogil
 
     void calc_metrics_double(
         const double *A, const size_t lda, const double *B, const size_t ldb,
@@ -59,7 +59,7 @@ cdef extern from "recometrics_signatures.hpp":
         int32_t min_pos_test,
         int32_t nthreads,
         uint64_t seed
-    ) nogil except +
+    ) except + nogil
 
     void split_data_selected_users_double(
         const int32_t *X_csr_p,
@@ -74,7 +74,7 @@ cdef extern from "recometrics_signatures.hpp":
         vector[double] &Xtest_csr,
         const double test_fraction,
         uint64_t seed
-    ) nogil except +
+    ) except + nogil
 
     void split_data_separate_users_double(
         const int32_t *X_csr_p,
@@ -97,7 +97,7 @@ cdef extern from "recometrics_signatures.hpp":
         const int32_t min_items_pool,
         const int32_t min_pos_test,
         uint64_t seed
-    ) nogil except +
+    ) except + nogil
 
     void split_data_joined_users_double(
         const int32_t *X_csr_p,
@@ -117,7 +117,7 @@ cdef extern from "recometrics_signatures.hpp":
         const int32_t min_items_pool,
         const int32_t min_pos_test,
         uint64_t seed
-    ) nogil except +
+    ) except + nogil
 
     void calc_metrics_float(
         const float *A, const size_t lda, const float *B, const size_t ldb,
@@ -142,7 +142,7 @@ cdef extern from "recometrics_signatures.hpp":
         int32_t min_pos_test,
         int32_t nthreads,
         uint64_t seed
-    ) nogil except +
+    ) except + nogil
 
     void split_data_selected_users_float(
         const int32_t *X_csr_p,
@@ -157,7 +157,7 @@ cdef extern from "recometrics_signatures.hpp":
         vector[float] &Xtest_csr,
         const double test_fraction,
         uint64_t seed
-    ) nogil except +
+    ) except + nogil
 
     void split_data_separate_users_float(
         const int32_t *X_csr_p,
@@ -180,7 +180,7 @@ cdef extern from "recometrics_signatures.hpp":
         const int32_t min_items_pool,
         const int32_t min_pos_test,
         uint64_t seed
-    ) nogil except +
+    ) except + nogil
 
     void split_data_joined_users_float(
         const int32_t *X_csr_p,
@@ -200,7 +200,7 @@ cdef extern from "recometrics_signatures.hpp":
         const int32_t min_items_pool,
         const int32_t min_pos_test,
         uint64_t seed
-    ) nogil except +
+    ) except + nogil
 
 def _get_has_openmp():
     return get_has_openmp()

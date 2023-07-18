@@ -284,7 +284,7 @@ class build_ext_subclass( build_ext ):
 setup(
     name  = "recometrics",
     packages = ["recometrics"],
-    version = '0.1.6-7',
+    version = '0.1.6-8',
     cmdclass = {'build_ext': build_ext_subclass},
     author = 'David Cortes',
     url = 'https://github.com/david-cortes/recometrics',
@@ -298,6 +298,8 @@ setup(
             define_macros=[
                 ("_FOR_PYTHON", None),
                 ("NDEBUG", None),
+                ("CYTHON_EXTERN_C", 'extern "C"'),
+                ("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")
             ]
             )
         ]
