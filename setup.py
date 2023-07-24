@@ -24,6 +24,7 @@ class build_ext_subclass( build_ext ):
     def build_extensions(self):
         is_msvc = self.compiler.compiler_type == "msvc"
         is_clang = hasattr(self.compiler, 'compiler_cxx') and ("clang++" in self.compiler.compiler_cxx)
+        is_windows = sys.platform[:3].lower() == "win"
 
         compiler = self.compiler.compiler_type
         if is_msvc:
@@ -284,7 +285,7 @@ class build_ext_subclass( build_ext ):
 setup(
     name  = "recometrics",
     packages = ["recometrics"],
-    version = '0.1.6-8',
+    version = '0.1.6-9',
     cmdclass = {'build_ext': build_ext_subclass},
     author = 'David Cortes',
     url = 'https://github.com/david-cortes/recometrics',
