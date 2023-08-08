@@ -24,13 +24,13 @@ ctypedef fused real_t:
     double
     float
 
-ctypedef double (*ddot__)(const int*, const double*, const int*, const double*, const int*) nogil
-ctypedef float (*sdot__)(const int*, const float*, const int*, const float*, const int*) nogil
+ctypedef double (*ddot__)(const int*, const double*, const int*, const double*, const int*) noexcept nogil
+ctypedef float (*sdot__)(const int*, const float*, const int*, const float*, const int*) noexcept nogil
 
-cdef public double ddot_(const int* n, const double* x, const int* incx, const double* y, const int* incy) nogil:
+cdef public double ddot_(const int* n, const double* x, const int* incx, const double* y, const int* incy) noexcept nogil:
     return (<ddot__>ddot)(n, x, incx, y, incy)
 
-cdef public float sdot_(const int* n, const float* x, const int* incx, const float* y, const int* incy) nogil:
+cdef public float sdot_(const int* n, const float* x, const int* incx, const float* y, const int* incy) noexcept nogil:
     return (<sdot__>sdot)(n, x, incx, y, incy)
 
 cdef extern from "recometrics_signatures.hpp":
