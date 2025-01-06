@@ -3,6 +3,7 @@ from setuptools import setup, Extension
 import numpy as np
 import sys, os, subprocess, warnings, re
 from Cython.Distutils import build_ext
+import tempfile
 
 found_omp = True
 def set_omp_false():
@@ -212,7 +213,7 @@ class build_ext_subclass( build_ext ):
             if not isinstance(comm, list):
                 comm = [comm]
             print("--- Checking compiler support for option '%s'" % " ".join(comm))
-            fname = "recometrics_compiler_testing.cpp"
+            fname = os.path.join(tempfile.gettempdir(), "recometrics_compiler_testing.cpp")
             with open(fname, "w") as ftest:
                 ftest.write(u"int main(int argc, char**argv) {return 0;}\n")
             try:
@@ -252,7 +253,7 @@ class build_ext_subclass( build_ext ):
             if not hasattr(self.compiler, "compiler_cxx"):
                 return None
             print("--- Checking compiler support for '__restrict' qualifier")
-            fname = "recometrics_compiler_testing.cpp"
+            fname = os.path.join(tempfile.gettempdir(), "recometrics_compiler_testing.cpp")
             with open(fname, "w") as ftest:
                 ftest.write(u"int main(int argc, char**argv) {return 0;}\n")
             try:
@@ -285,7 +286,7 @@ class build_ext_subclass( build_ext ):
 setup(
     name  = "recometrics",
     packages = ["recometrics"],
-    version = '0.1.6-11',
+    version = '0.1.6-12',
     cmdclass = {'build_ext': build_ext_subclass},
     author = 'David Cortes',
     url = 'https://github.com/david-cortes/recometrics',
